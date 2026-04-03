@@ -1,0 +1,2389 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bodega - Empresas Centrales SA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2E9CDB;
+            --primary-dark: #2480b8;
+            --primary-light: #e8f4fb;
+            --secondary: #FF6B00;
+            --secondary-dark: #d95b00;
+            --white: #ffffff;
+            --bg: #f0f2f5;
+            --text: #333333;
+            --text-light: #777777;
+            --border: #e0e0e0;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 70px;
+            --topbar-height: 60px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed;
+            left: 0; top: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            color: var(--white);
+            z-index: 1000;
+            transition: width 0.3s ease;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+        .sidebar-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            min-height: 60px;
+        }
+        .sidebar-header .logo-icon {
+            min-width: 38px; height: 38px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px;
+        }
+        .sidebar-header .logo-text {
+            font-size: 14px; font-weight: 600;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+        .sidebar.collapsed .logo-text { opacity: 0; pointer-events: none; }
+
+        .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 20px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-nav a:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+        .sidebar-nav a.active {
+            color: var(--white);
+            background: rgba(46,156,219,0.15);
+            border-left-color: var(--primary);
+        }
+        .sidebar-nav a i { min-width: 22px; text-align: center; font-size: 16px; }
+        .sidebar-nav .nav-label { transition: opacity 0.2s; }
+        .sidebar.collapsed .nav-label { opacity: 0; pointer-events: none; }
+        .sidebar-nav .nav-divider {
+            height: 1px; background: rgba(255,255,255,0.08);
+            margin: 8px 16px;
+        }
+        .sidebar-footer {
+            padding: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-footer a {
+            display: flex; align-items: center; gap: 14px;
+            padding: 10px 8px;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none; font-size: 14px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .sidebar-footer a:hover { color: #ff6b6b; background: rgba(255,107,107,0.1); }
+        .sidebar-footer a i { min-width: 22px; text-align: center; }
+        .sidebar.collapsed .sidebar-footer .nav-label { opacity: 0; }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+        .sidebar.collapsed ~ .main-content { margin-left: var(--sidebar-collapsed); }
+
+        /* ===== TOP BAR ===== */
+        .topbar {
+            height: var(--topbar-height);
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px;
+            position: sticky; top: 0;
+            z-index: 500;
+            box-shadow: var(--shadow);
+        }
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .topbar-toggle {
+            background: none; border: none; font-size: 20px;
+            color: var(--text); cursor: pointer; padding: 4px;
+        }
+        .topbar-right { display: flex; align-items: center; gap: 20px; }
+        .topbar-notif {
+            position: relative; cursor: pointer;
+            background: none; border: none; font-size: 18px; color: var(--text);
+        }
+        .topbar-notif .badge {
+            position: absolute; top: -4px; right: -6px;
+            background: var(--danger); color: white;
+            font-size: 10px; width: 18px; height: 18px;
+            border-radius: 50%; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .topbar-user {
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer;
+        }
+        .topbar-user .avatar {
+            width: 36px; height: 36px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 600; font-size: 14px;
+        }
+        .topbar-user .user-info { line-height: 1.3; }
+        .topbar-user .user-name { font-size: 13px; font-weight: 600; }
+        .topbar-user .user-role { font-size: 11px; color: var(--text-light); }
+
+        /* ===== PAGE CONTENT ===== */
+        .page-content { padding: 24px; }
+        .page-title {
+            font-size: 22px; font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        /* ===== CARDS ===== */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex; align-items: center; gap: 16px;
+        }
+        .kpi-card .kpi-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; color: white;
+        }
+        .kpi-card .kpi-icon.blue { background: var(--primary); }
+        .kpi-card .kpi-icon.orange { background: var(--secondary); }
+        .kpi-card .kpi-icon.green { background: var(--success); }
+        .kpi-card .kpi-icon.red { background: var(--danger); }
+        .kpi-card .kpi-value { font-size: 24px; font-weight: 700; }
+        .kpi-card .kpi-label { font-size: 12px; color: var(--text-light); }
+
+        .card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            font-weight: 600; font-size: 15px;
+        }
+        .card-body { padding: 20px; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        /* ===== TABLES ===== */
+        .table-container { overflow-x: auto; }
+        table {
+            width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        table th {
+            background: var(--bg);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        table tr:hover td { background: var(--primary-light); }
+
+        .badge-status {
+            padding: 4px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 500;
+            display: inline-block;
+        }
+        .badge-status.entrada { background: #d4edda; color: #155724; }
+        .badge-status.salida { background: #f8d7da; color: #721c24; }
+        .badge-status.ajuste { background: #fff3cd; color: #856404; }
+        .badge-status.critico { background: #f8d7da; color: #721c24; }
+        .badge-status.bajo { background: #fff3cd; color: #856404; }
+        .badge-status.normal { background: #d4edda; color: #155724; }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 8px 16px;
+            border: none; border-radius: 6px;
+            font-family: inherit; font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-secondary:hover { background: var(--secondary-dark); }
+        .btn-outline {
+            background: transparent; border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover { background: var(--bg); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #218838; }
+        .btn-icon {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-light); font-size: 14px; padding: 4px;
+            transition: color 0.2s;
+        }
+        .btn-icon:hover { color: var(--primary); }
+        .btn-icon.delete:hover { color: var(--danger); }
+
+        /* ===== FORMS ===== */
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block; font-size: 13px; font-weight: 500;
+            margin-bottom: 4px; color: var(--text);
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit; font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(46,156,219,0.1); }
+        select.form-control { cursor: pointer; }
+        textarea.form-control { resize: vertical; min-height: 80px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+        /* ===== SECTIONS ===== */
+        .bodega-section { display: none; }
+        .bodega-section.active { display: block; }
+
+        /* ===== TOOLBAR ===== */
+        .toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px;
+            margin-bottom: 16px;
+        }
+        .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .toolbar .search-input {
+            padding: 7px 12px 7px 34px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit; font-size: 13px;
+            width: 240px; outline: none;
+        }
+        .toolbar .search-input:focus { border-color: var(--primary); }
+        .toolbar .search-wrap { position: relative; }
+        .toolbar .search-wrap i {
+            position: absolute; left: 10px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light); font-size: 13px;
+        }
+
+        /* ===== NOTIFICATION DROPDOWN ===== */
+        .notif-dropdown {
+            position: absolute; top: 50px; right: 80px;
+            width: 320px; background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            z-index: 600; display: none;
+        }
+        .notif-dropdown.show { display: block; }
+        .notif-dropdown .notif-header {
+            padding: 14px 16px; font-weight: 600; font-size: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .notif-dropdown .notif-item {
+            padding: 12px 16px; border-bottom: 1px solid var(--border);
+            font-size: 12px; cursor: pointer; transition: background 0.2s;
+        }
+        .notif-dropdown .notif-item:hover { background: var(--primary-light); }
+        .notif-dropdown .notif-item .notif-text { margin-bottom: 4px; }
+        .notif-dropdown .notif-item .notif-time { color: var(--text-light); font-size: 11px; }
+
+        /* ===== AUTOCOMPLETE ===== */
+        .autocomplete-wrap { position: relative; }
+        .autocomplete-list {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            max-height: 200px; overflow-y: auto;
+            z-index: 100; display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .autocomplete-list.show { display: block; }
+        .autocomplete-item {
+            padding: 8px 12px; cursor: pointer;
+            font-size: 13px; transition: background 0.15s;
+        }
+        .autocomplete-item:hover { background: var(--primary-light); }
+        .autocomplete-item .item-sku { color: var(--text-light); font-size: 11px; }
+
+        /* ===== TOTALS BAR ===== */
+        .totals-bar {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px 20px;
+            display: flex; justify-content: flex-end; gap: 30px;
+            align-items: center; margin-top: 16px;
+        }
+        .total-item { text-align: right; }
+        .total-item .total-label { font-size: 12px; color: var(--text-light); }
+        .total-item .total-value { font-size: 18px; font-weight: 700; }
+        .total-item .total-value.grand { color: var(--primary); font-size: 22px; }
+
+        /* ===== DIFF ROW ===== */
+        tr.diff-row td { background: #fff3cd !important; }
+        tr.diff-row-critical td { background: #f8d7da !important; }
+
+        /* ===== MOBILE ===== */
+        .mobile-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 999; display: none;
+        }
+        .mobile-overlay.active { display: block; }
+
+        /* ===== PRINT ===== */
+        @media print {
+            .sidebar, .topbar, .no-print { display: none !important; }
+            .main-content { margin-left: 0 !important; }
+            .page-content { padding: 10px; }
+            .card { box-shadow: none; border: 1px solid #ddd; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 20px; }
+            .print-header h2 { font-size: 18px; margin-bottom: 4px; }
+            .print-header p { font-size: 12px; color: #666; }
+            body { background: white; }
+        }
+        .print-header { display: none; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: var(--sidebar-width) !important;
+            }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { margin-left: 0 !important; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+            .form-row-3 { grid-template-columns: 1fr; }
+            .totals-bar { flex-direction: column; align-items: flex-end; gap: 10px; }
+        }
+        @media (max-width: 480px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+            .topbar-user .user-info { display: none; }
+        }
+        /* LOGIN OVERLAY */
+        .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+        .login-box{background:#fff;border-radius:16px;padding:40px;width:380px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+        .login-logo{text-align:center;margin-bottom:24px;}
+    </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <div class="login-logo">
+            <div style="width:60px;height:60px;background:#2E9CDB;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:24px;margin:0 auto 12px">EC</div>
+            <h2 style="font-size:20px;margin-bottom:4px">Empresas Centrales SA</h2>
+            <p style="color:#777;font-size:13px">Bodega — Iniciar Sesion</p>
+        </div>
+        <div class="login-form">
+            <div class="form-group" style="margin-bottom:12px">
+                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px">Email</label>
+                <input type="email" id="loginEmail" class="form-control" placeholder="correo@ecsa.com" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+            </div>
+            <div class="form-group" style="margin-bottom:16px">
+                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px">Contrasena</label>
+                <input type="password" id="loginPassword" class="form-control" placeholder="••••••" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px" onkeydown="if(event.key==='Enter')doLogin()">
+            </div>
+            <div id="loginError" style="color:#dc3545;font-size:13px;margin-bottom:10px;display:none"></div>
+            <button onclick="doLogin()" style="width:100%;padding:12px;background:#2E9CDB;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">Iniciar Sesion</button>
+        </div>
+    </div>
+</div>
+
+<!-- ACCESS DENIED SCREEN -->
+<div class="login-overlay" id="accessDenied" style="display:none">
+    <div class="login-box" style="text-align:center">
+        <i class="fas fa-shield-alt" style="font-size:48px;color:#dc3545;margin-bottom:16px"></i>
+        <h2 style="font-size:20px;margin-bottom:8px">Acceso Denegado</h2>
+        <p style="color:#777;font-size:14px;margin-bottom:16px">Se requiere rol <strong>Admin</strong> o <strong>Bodeguero</strong></p>
+        <button onclick="ECSA.Firebase.auth.signOut().then(function(){document.getElementById('accessDenied').style.display='none';document.getElementById('loginOverlay').style.display='flex';})" style="padding:10px 24px;background:#2E9CDB;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">Cerrar Sesion e Intentar con Otra Cuenta</button>
+    </div>
+</div>
+
+<!-- Mobile Overlay -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebarMobile()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-icon">EC</div>
+        <span class="logo-text">Empresas Centrales SA</span>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="#" data-section="entrada">
+            <i class="fas fa-truck-loading"></i><span class="nav-label">Entrada Mercancia</span>
+        </a>
+        <a href="#" data-section="salida">
+            <i class="fas fa-dolly"></i><span class="nav-label">Salida / Transferencia</span>
+        </a>
+        <a href="#" data-section="inventario">
+            <i class="fas fa-clipboard-check"></i><span class="nav-label">Inventario Fisico</span>
+        </a>
+        <a href="#" data-section="historial">
+            <i class="fas fa-history"></i><span class="nav-label">Historial Movimientos</span>
+        </a>
+        <a href="#" data-section="alertas">
+            <i class="fas fa-exclamation-triangle"></i><span class="nav-label">Alertas Stock</span>
+        </a>
+        <a href="#" class="active" data-section="despacho">
+            <i class="fas fa-shipping-fast"></i><span class="nav-label">Despacho Pedidos</span>
+        </a>
+        <a href="#" data-section="transportistas">
+            <i class="fas fa-truck"></i><span class="nav-label">Transportistas</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="admin.html">
+            <i class="fas fa-arrow-left"></i><span class="nav-label">Volver al Admin</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="#" id="btnLogout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="nav-label">Cerrar Sesion</span>
+        </a>
+    </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+
+    <!-- TOP BAR -->
+    <div class="topbar no-print">
+        <div class="topbar-left">
+            <button class="topbar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <span style="font-weight:600; font-size:15px;">
+                <i class="fas fa-warehouse" style="color:var(--primary); margin-right:6px;"></i>
+                Gestion de Bodega
+            </span>
+        </div>
+        <div class="topbar-right">
+            <button class="topbar-notif" id="btnNotif" onclick="toggleNotif()">
+                <i class="fas fa-bell"></i>
+                <span class="badge" id="notifBadge">0</span>
+            </button>
+            <div class="topbar-user">
+                <div class="avatar" id="userAvatar">U</div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">Usuario</div>
+                    <div class="user-role" id="userRole">Bodeguero</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification dropdown -->
+    <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-header">Notificaciones</div>
+        <div id="notifList">
+            <div class="notif-item"><div class="notif-text">Sin notificaciones</div></div>
+        </div>
+    </div>
+
+    <!-- Print header (visible only when printing) -->
+    <div class="print-header">
+        <h2>Empresas Centrales SA</h2>
+        <p>Tel: 6090-9890 | Email: ventas@ecsa.com</p>
+        <p>Sistema de Bodega - Documento generado el <span id="printDate"></span></p>
+        <hr style="margin:10px 0;">
+    </div>
+
+    <div class="page-content">
+
+        <!-- ====================================================== -->
+        <!-- SECTION 1: ENTRADA DE MERCANCIA -->
+        <!-- ====================================================== -->
+        <div class="bodega-section" id="seccionEntrada">
+            <h1 class="page-title"><i class="fas fa-truck-loading" style="color:var(--primary);"></i> Entrada de Mercancia</h1>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Datos de la Entrada</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label>Numero de Factura Proveedor</label>
+                            <input type="text" class="form-control" id="entNumFactura" placeholder="Ej: FAC-001234">
+                        </div>
+                        <div class="form-group">
+                            <label>Proveedor</label>
+                            <select class="form-control" id="entProveedor">
+                                <option value="">Seleccionar proveedor...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Recepcion</label>
+                            <input type="date" class="form-control" id="entFecha">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Productos a Recibir</span>
+                    <button class="btn btn-primary btn-sm" onclick="entradaAddRow()">
+                        <i class="fas fa-plus"></i> Agregar Producto
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="form-group autocomplete-wrap" style="max-width:400px;">
+                        <label>Buscar producto por SKU o nombre</label>
+                        <input type="text" class="form-control" id="entBuscarProducto" placeholder="Escriba SKU o nombre..." autocomplete="off">
+                        <div class="autocomplete-list" id="entAutoComplete"></div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Producto</th>
+                                    <th style="width:120px;">Cantidad</th>
+                                    <th style="width:140px;">Precio Costo (B/.)</th>
+                                    <th style="width:140px;">Total Linea</th>
+                                    <th style="width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="entProductosBody">
+                                <tr id="entEmptyRow">
+                                    <td colspan="6" style="text-align:center; color:var(--text-light); padding:30px;">
+                                        <i class="fas fa-box-open" style="font-size:24px; margin-bottom:8px; display:block;"></i>
+                                        Busque y agregue productos para registrar la entrada
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="totals-bar">
+                <div class="total-item">
+                    <div class="total-label">Subtotal</div>
+                    <div class="total-value" id="entSubtotal">B/. 0.00</div>
+                </div>
+                <div class="total-item">
+                    <div class="total-label">ITBMS (7%)</div>
+                    <div class="total-value" id="entItbms">B/. 0.00</div>
+                </div>
+                <div class="total-item">
+                    <div class="total-label">Total</div>
+                    <div class="total-value grand" id="entTotal">B/. 0.00</div>
+                </div>
+            </div>
+
+            <div style="margin-top:16px; display:flex; gap:10px; justify-content:flex-end;" class="no-print">
+                <button class="btn btn-outline" onclick="entradaImprimir()">
+                    <i class="fas fa-print"></i> Imprimir Orden de Recepcion
+                </button>
+                <button class="btn btn-success" onclick="entradaRegistrar()" id="btnRegistrarEntrada">
+                    <i class="fas fa-check-circle"></i> Registrar Entrada
+                </button>
+            </div>
+        </div>
+
+        <!-- ====================================================== -->
+        <!-- SECTION 2: SALIDA Y TRANSFERENCIA -->
+        <!-- ====================================================== -->
+        <div class="bodega-section" id="seccionSalida">
+            <h1 class="page-title"><i class="fas fa-dolly" style="color:var(--secondary);"></i> Salida y Transferencia</h1>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Registrar Salida de Mercancia</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group autocomplete-wrap">
+                            <label>Buscar producto por SKU o nombre</label>
+                            <input type="text" class="form-control" id="salBuscarProducto" placeholder="Escriba SKU o nombre..." autocomplete="off">
+                            <div class="autocomplete-list" id="salAutoComplete"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Producto seleccionado</label>
+                            <input type="text" class="form-control" id="salProductoNombre" readonly placeholder="Ninguno seleccionado" style="background:#f9f9f9;">
+                            <input type="hidden" id="salProductoId">
+                            <input type="hidden" id="salProductoSku">
+                        </div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label>Stock Actual</label>
+                            <input type="number" class="form-control" id="salStockActual" readonly style="background:#f9f9f9;">
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad a Transferir / Sacar</label>
+                            <input type="number" class="form-control" id="salCantidad" min="1" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Destino</label>
+                            <select class="form-control" id="salDestino">
+                                <option value="">Seleccionar destino...</option>
+                                <option value="tienda">Tienda</option>
+                                <option value="consumo_interno">Consumo Interno</option>
+                                <option value="devolucion_proveedor">Devolucion a Proveedor</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Motivo de Salida</label>
+                        <textarea class="form-control" id="salMotivo" placeholder="Describa el motivo de la salida..."></textarea>
+                    </div>
+                    <div style="text-align:right; margin-top:10px;">
+                        <button class="btn btn-secondary" onclick="salidaRegistrar()" id="btnRegistrarSalida">
+                            <i class="fas fa-sign-out-alt"></i> Registrar Salida
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent exits -->
+            <div class="card">
+                <div class="card-header">
+                    <span>Salidas Recientes</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>SKU</th>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Destino</th>
+                                    <th>Motivo</th>
+                                    <th>Usuario</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salidasRecientesBody">
+                                <tr><td colspan="7" style="text-align:center; color:var(--text-light); padding:20px;">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================================================== -->
+        <!-- SECTION 3: INVENTARIO FISICO -->
+        <!-- ====================================================== -->
+        <div class="bodega-section" id="seccionInventario">
+            <h1 class="page-title"><i class="fas fa-clipboard-check" style="color:var(--success);"></i> Inventario Fisico (Conteo)</h1>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Conteo de Inventario</span>
+                    <div>
+                        <button class="btn btn-outline btn-sm" onclick="inventarioCargar()">
+                            <i class="fas fa-sync-alt"></i> Recargar
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="inventarioAplicarAjuste()" style="margin-left:6px;">
+                            <i class="fas fa-check-double"></i> Aplicar Ajuste
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="toolbar no-print">
+                        <div class="toolbar-left">
+                            <div class="search-wrap">
+                                <i class="fas fa-search"></i>
+                                <input type="text" class="search-input" id="invBuscar" placeholder="Filtrar productos...">
+                            </div>
+                        </div>
+                        <div class="toolbar-right">
+                            <span style="font-size:12px; color:var(--text-light);" id="invResumen">
+                                0 productos cargados
+                            </span>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Nombre</th>
+                                    <th style="width:130px;">Stock Sistema</th>
+                                    <th style="width:130px;">Conteo Fisico</th>
+                                    <th style="width:130px;">Diferencia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventarioBody">
+                                <tr><td colspan="5" style="text-align:center; color:var(--text-light); padding:30px;">Cargando productos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================================================== -->
+        <!-- SECTION 4: HISTORIAL DE MOVIMIENTOS -->
+        <!-- ====================================================== -->
+        <div class="bodega-section" id="seccionHistorial">
+            <h1 class="page-title"><i class="fas fa-history" style="color:var(--info);"></i> Historial de Movimientos</h1>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Movimientos de Inventario</span>
+                    <button class="btn btn-outline btn-sm" onclick="historialExportCSV()">
+                        <i class="fas fa-file-csv"></i> Exportar Excel (CSV)
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="toolbar no-print">
+                        <div class="toolbar-left">
+                            <div class="search-wrap">
+                                <i class="fas fa-search"></i>
+                                <input type="text" class="search-input" id="histBuscar" placeholder="Buscar producto...">
+                            </div>
+                            <select class="form-control" id="histTipo" style="width:160px;">
+                                <option value="">Todos los tipos</option>
+                                <option value="entrada">Entrada</option>
+                                <option value="salida">Salida</option>
+                                <option value="ajuste">Ajuste</option>
+                                <option value="venta">Venta</option>
+                                <option value="devolucion">Devolucion</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-right">
+                            <input type="date" class="form-control" id="histFechaDesde" style="width:150px;" title="Desde">
+                            <input type="date" class="form-control" id="histFechaHasta" style="width:150px;" title="Hasta">
+                            <button class="btn btn-primary btn-sm" onclick="historialFiltrar()">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Producto</th>
+                                    <th>SKU</th>
+                                    <th>Tipo</th>
+                                    <th>Cantidad</th>
+                                    <th>Stock Ant.</th>
+                                    <th>Stock Nuevo</th>
+                                    <th>Usuario</th>
+                                    <th>Nota</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historialBody">
+                                <tr><td colspan="9" style="text-align:center; color:var(--text-light); padding:30px;">Cargando movimientos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:10px; text-align:right;">
+                        <span style="font-size:12px; color:var(--text-light);" id="histResumen">0 movimientos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================================================== -->
+        <!-- SECTION 5: ALERTAS DE STOCK BAJO -->
+        <!-- ====================================================== -->
+        <div class="bodega-section" id="seccionAlertas">
+            <h1 class="page-title"><i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i> Alertas de Stock Bajo</h1>
+
+            <div class="kpi-grid" id="alertasKpis">
+                <div class="kpi-card">
+                    <div class="kpi-icon red"><i class="fas fa-times-circle"></i></div>
+                    <div>
+                        <div class="kpi-value" id="kpiCriticos">0</div>
+                        <div class="kpi-label">Productos Criticos (Stock = 0)</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon orange"><i class="fas fa-exclamation-circle"></i></div>
+                    <div>
+                        <div class="kpi-value" id="kpiBajos">0</div>
+                        <div class="kpi-label">Stock Bajo</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon green"><i class="fas fa-check-circle"></i></div>
+                    <div>
+                        <div class="kpi-value" id="kpiNormales">0</div>
+                        <div class="kpi-label">Stock Normal</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Productos con Stock Bajo</span>
+                    <button class="btn btn-secondary btn-sm" onclick="generarOrdenCompraPDF()">
+                        <i class="fas fa-file-pdf"></i> Generar Orden de Compra
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Nombre</th>
+                                    <th>Stock Actual</th>
+                                    <th>Stock Minimo</th>
+                                    <th>Diferencia</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alertasBody">
+                                <tr><td colspan="6" style="text-align:center; color:var(--text-light); padding:30px;">Cargando alertas...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================================================== -->
+        <!-- SECTION 6: DESPACHO DE PEDIDOS -->
+        <!-- ====================================================== -->
+        <div class="bodega-section active" id="seccionDespacho">
+            <h1 class="page-title"><i class="fas fa-shipping-fast" style="color:var(--primary);"></i> Despacho de Pedidos</h1>
+
+            <!-- KPIs -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon orange"><i class="fas fa-clock"></i></div>
+                    <div><div class="kpi-value" id="kpiPendientesDesp">0</div><div class="kpi-label">Pendientes</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon blue"><i class="fas fa-cogs"></i></div>
+                    <div><div class="kpi-value" id="kpiEnPreparacion">0</div><div class="kpi-label">En Preparacion</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon green"><i class="fas fa-check-circle"></i></div>
+                    <div><div class="kpi-value" id="kpiListosDesp">0</div><div class="kpi-label">Listos para Despacho</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon red"><i class="fas fa-truck"></i></div>
+                    <div><div class="kpi-value" id="kpiDespachados">0</div><div class="kpi-label">Despachados Hoy</div></div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-body" style="padding:12px 16px;">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                        <select class="form-control" id="despFiltroEstado" style="width:180px;" onchange="Despacho.cargar()">
+                            <option value="">Todos los estados</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_preparacion">En Preparacion</option>
+                            <option value="listo">Listo</option>
+                            <option value="despachado">Despachado</option>
+                        </select>
+                        <select class="form-control" id="despFiltroEntrega" style="width:180px;" onchange="Despacho.cargar()">
+                            <option value="">Todos los metodos</option>
+                            <option value="retiro">Retiro en tienda</option>
+                            <option value="domicilio">Entrega a domicilio</option>
+                        </select>
+                        <input type="text" class="form-control" id="despBuscar" placeholder="Buscar orden o cliente..." style="width:220px;" oninput="Despacho.cargar()">
+                        <button class="btn btn-outline btn-sm" onclick="Despacho.exportarExcel()">
+                            <i class="fas fa-file-excel"></i> Exportar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de pedidos -->
+            <div class="card">
+                <div class="card-header">
+                    <span>Pedidos Pendientes de Despacho</span>
+                    <button class="btn btn-primary btn-sm" onclick="Despacho.cargar()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Orden</th>
+                                    <th>Cliente</th>
+                                    <th>Fecha</th>
+                                    <th>Productos</th>
+                                    <th>Entrega</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="despachosBody">
+                                <tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:30px;">Cargando pedidos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial de despachos -->
+            <div class="card" style="margin-top:16px;">
+                <div class="card-header">
+                    <span>Historial de Despachos</span>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="date" class="form-control" id="despHistDesde" style="width:140px;">
+                        <input type="date" class="form-control" id="despHistHasta" style="width:140px;">
+                        <button class="btn btn-primary btn-sm" onclick="Despacho.cargarHistorial()"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Orden</th><th>Cliente</th><th>Entrega</th><th>Transportista</th><th>Fecha Despacho</th><th>Tiempo Prep.</th></tr></thead>
+                            <tbody id="despHistorialBody">
+                                <tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:20px;">Seleccione fechas y busque</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================================================== -->
+        <!-- SECTION 7: TRANSPORTISTAS -->
+        <!-- ====================================================== -->
+        <div class="bodega-section" id="seccionTransportistas">
+            <h1 class="page-title"><i class="fas fa-truck" style="color:var(--secondary);"></i> Transportistas</h1>
+
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header">
+                    <span>Agregar Transportista</span>
+                </div>
+                <div class="card-body">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                        <div class="form-group" style="flex:1;min-width:160px;"><label>Nombre</label><input type="text" class="form-control" id="transpNombre" placeholder="Nombre completo"></div>
+                        <div class="form-group" style="flex:1;min-width:120px;"><label>Telefono</label><input type="text" class="form-control" id="transpTelefono" placeholder="6000-0000"></div>
+                        <div class="form-group" style="flex:1;min-width:120px;"><label>Placa Vehiculo</label><input type="text" class="form-control" id="transpPlaca" placeholder="ABC-1234"></div>
+                        <div class="form-group" style="flex:1;min-width:140px;"><label>Zona Cobertura</label><input type="text" class="form-control" id="transpZona" placeholder="Panama Centro"></div>
+                        <button class="btn btn-success btn-sm" onclick="Transportistas.agregar()" style="height:38px;"><i class="fas fa-plus"></i> Agregar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><span>Lista de Transportistas</span></div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Nombre</th><th>Telefono</th><th>Placa</th><th>Zona</th><th>Entregas</th><th>Acciones</th></tr></thead>
+                            <tbody id="transportistasBody">
+                                <tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:20px;">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /page-content -->
+</div><!-- /main-content -->
+
+<!-- Modal: Detalle Pedido Despacho -->
+<div class="modal-overlay" id="modalDetallePedido" style="display:none;">
+    <div class="modal-box" style="max-width:700px;position:relative;max-height:90vh;overflow-y:auto;">
+        <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e0e0e0;">
+            <h3 id="modalPedidoTitulo">Detalle del Pedido</h3>
+            <button style="background:none;border:none;font-size:20px;cursor:pointer;color:#777;" onclick="document.getElementById('modalDetallePedido').style.display='none'">&times;</button>
+        </div>
+        <div class="modal-body" id="modalPedidoBody" style="padding:20px;"></div>
+    </div>
+</div>
+
+<!-- FIREBASE SDK -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<script>
+(function() {
+    'use strict';
+
+    // =====================================================
+    // GLOBAL STATE
+    // =====================================================
+    var allProductos = [];
+    var allProveedores = [];
+    var entradaLineas = [];
+    var inventarioProductos = [];
+    var historialMovimientos = [];
+    var historialFiltrado = [];
+    var alertasProductos = [];
+    var currentUserProfile = null;
+
+    var ITBMS_RATE = 0.07;
+
+    // =====================================================
+    // AUTH CHECK
+    // =====================================================
+    function doLogin() {
+        var email = document.getElementById('loginEmail').value.trim();
+        var password = document.getElementById('loginPassword').value;
+        var errorEl = document.getElementById('loginError');
+        errorEl.style.display = 'none';
+        if (!email || !password) { errorEl.textContent = 'Complete email y contrasena'; errorEl.style.display = 'block'; return; }
+        ECSA.Firebase.auth.signInWithEmailAndPassword(email, password).catch(function(err) {
+            errorEl.textContent = err.code === 'auth/user-not-found' ? 'Usuario no encontrado' : err.code === 'auth/wrong-password' ? 'Contrasena incorrecta' : 'Error: ' + err.message;
+            errorEl.style.display = 'block';
+        });
+    }
+
+    ECSA.Firebase.auth.onAuthStateChanged(async function(user) {
+        if (!user) {
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('accessDenied').style.display = 'none';
+            return;
+        }
+        try {
+            var profile = await ECSA.Firebase.getDocument('usuarios', user.uid);
+            if (!profile) {
+                profile = await ECSA.Firebase.getDocument('clientes', user.uid);
+            }
+            var userRole = (profile && (profile.rol || profile.tipo)) || '';
+            if (profile && profile.activo === false) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('accessDenied').style.display = 'flex';
+                // Update the access denied message
+                var adBox = document.querySelector('#accessDenied .login-box p');
+                if (adBox) adBox.innerHTML = 'Tu cuenta esta <strong>desactivada</strong>. Contacta al administrador.';
+                await ECSA.Firebase.auth.signOut();
+                return;
+            }
+            if (!profile || (userRole !== 'admin' && userRole !== 'bodeguero')) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('accessDenied').style.display = 'flex';
+                return;
+            }
+            // Auth OK - hide login, show app
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('accessDenied').style.display = 'none';
+            currentUserProfile = profile;
+            document.getElementById('userName').textContent = profile.nombre || profile.name || user.email;
+            var rolLabel = userRole === 'admin' ? 'Administrador' : 'Bodeguero';
+            document.getElementById('userRole').textContent = rolLabel;
+            document.getElementById('userAvatar').textContent = (profile.nombre || user.email || 'U').charAt(0).toUpperCase();
+            cargarProductos();
+            cargarProveedores();
+            cargarAlertasCount();
+        } catch (err) {
+            console.error('Error verificando perfil:', err);
+        }
+    });
+
+    // Logout — go back to login screen instead of index.html
+    document.getElementById('btnLogout').addEventListener('click', function(e) {
+        e.preventDefault();
+        ECSA.Firebase.auth.signOut();
+    });
+
+    // =====================================================
+    // SIDEBAR NAVIGATION
+    // =====================================================
+    var sidebarLinks = document.querySelectorAll('.sidebar-nav a[data-section]');
+    sidebarLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            var section = this.getAttribute('data-section');
+            switchSection(section);
+        });
+    });
+
+    function switchSection(sectionName) {
+        // Update sidebar active
+        sidebarLinks.forEach(function(l) { l.classList.remove('active'); });
+        var activeLink = document.querySelector('.sidebar-nav a[data-section="' + sectionName + '"]');
+        if (activeLink) activeLink.classList.add('active');
+
+        // Show section
+        document.querySelectorAll('.bodega-section').forEach(function(s) { s.classList.remove('active'); });
+        var sectionMap = {
+            'entrada': 'seccionEntrada',
+            'salida': 'seccionSalida',
+            'inventario': 'seccionInventario',
+            'historial': 'seccionHistorial',
+            'alertas': 'seccionAlertas',
+            'despacho': 'seccionDespacho',
+            'transportistas': 'seccionTransportistas'
+        };
+        var el = document.getElementById(sectionMap[sectionName]);
+        if (el) el.classList.add('active');
+
+        // Load section data
+        if (sectionName === 'inventario') inventarioCargar();
+        if (sectionName === 'historial') historialCargar();
+        if (sectionName === 'alertas') alertasCargar();
+        if (sectionName === 'salida') cargarSalidasRecientes();
+        if (sectionName === 'despacho') Despacho.cargar();
+        if (sectionName === 'transportistas') Transportistas.cargar();
+
+        // Close sidebar on mobile
+        if (window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.remove('mobile-open');
+            document.getElementById('mobileOverlay').classList.remove('active');
+        }
+    }
+
+    // Sidebar toggle
+    window.toggleSidebar = function() {
+        if (window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.toggle('mobile-open');
+            document.getElementById('mobileOverlay').classList.toggle('active');
+        } else {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+    };
+    window.toggleSidebarMobile = function() {
+        document.getElementById('sidebar').classList.remove('mobile-open');
+        document.getElementById('mobileOverlay').classList.remove('active');
+    };
+
+    // Notification toggle
+    window.toggleNotif = function() {
+        document.getElementById('notifDropdown').classList.toggle('show');
+    };
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.topbar-notif') && !e.target.closest('.notif-dropdown')) {
+            document.getElementById('notifDropdown').classList.remove('show');
+        }
+    });
+
+    // =====================================================
+    // DATA LOADING
+    // =====================================================
+    async function cargarProductos() {
+        try {
+            allProductos = await ECSA.Firebase.getDocuments('productos');
+        } catch (err) {
+            console.error('Error cargando productos:', err);
+            allProductos = [];
+        }
+    }
+
+    async function cargarProveedores() {
+        try {
+            allProveedores = await ECSA.Firebase.getDocuments('proveedores');
+        } catch (err) {
+            console.error('Error cargando proveedores:', err);
+            allProveedores = [];
+        }
+        // Populate dropdown
+        var sel = document.getElementById('entProveedor');
+        sel.innerHTML = '<option value="">Seleccionar proveedor...</option>';
+        allProveedores.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.nombre || p.name || p.empresa || p.id;
+            sel.appendChild(opt);
+        });
+    }
+
+    async function cargarAlertasCount() {
+        try {
+            var productos = allProductos.length ? allProductos : await ECSA.Firebase.getDocuments('productos');
+            var count = 0;
+            productos.forEach(function(p) {
+                var stock = p.stock || 0;
+                var minStock = p.minStock || 0;
+                if (stock <= minStock) count++;
+            });
+            var badge = document.getElementById('notifBadge');
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+
+            // Update notification list
+            if (count > 0) {
+                var html = '';
+                productos.filter(function(p) { return (p.stock || 0) <= (p.minStock || 0); }).slice(0, 5).forEach(function(p) {
+                    html += '<div class="notif-item"><div class="notif-text"><i class="fas fa-exclamation-triangle" style="color:var(--warning); margin-right:6px;"></i>' +
+                        (p.nombre || p.name) + ' - Stock: ' + (p.stock || 0) + '</div>' +
+                        '<div class="notif-time">Stock minimo: ' + (p.minStock || 0) + '</div></div>';
+                });
+                document.getElementById('notifList').innerHTML = html;
+            }
+        } catch (err) {
+            console.error('Error cargando alertas:', err);
+        }
+    }
+
+    // =====================================================
+    // AUTOCOMPLETE HELPER
+    // =====================================================
+    function setupAutocomplete(inputId, listId, onSelect) {
+        var input = document.getElementById(inputId);
+        var list = document.getElementById(listId);
+
+        input.addEventListener('input', function() {
+            var query = this.value.toLowerCase().trim();
+            if (query.length < 2) {
+                list.classList.remove('show');
+                return;
+            }
+            var matches = allProductos.filter(function(p) {
+                var nombre = (p.nombre || p.name || '').toLowerCase();
+                var sku = (p.sku || '').toLowerCase();
+                return nombre.indexOf(query) !== -1 || sku.indexOf(query) !== -1;
+            }).slice(0, 10);
+
+            if (matches.length === 0) {
+                list.classList.remove('show');
+                return;
+            }
+
+            list.innerHTML = matches.map(function(p) {
+                return '<div class="autocomplete-item" data-id="' + p.id + '">' +
+                    '<div>' + (p.nombre || p.name) + '</div>' +
+                    '<div class="item-sku">SKU: ' + (p.sku || 'N/A') + ' | Stock: ' + (p.stock || 0) + '</div>' +
+                    '</div>';
+            }).join('');
+            list.classList.add('show');
+
+            // Click handlers
+            list.querySelectorAll('.autocomplete-item').forEach(function(item) {
+                item.addEventListener('click', function() {
+                    var id = this.getAttribute('data-id');
+                    var producto = allProductos.find(function(p) { return p.id === id; });
+                    if (producto) {
+                        onSelect(producto);
+                        input.value = '';
+                        list.classList.remove('show');
+                    }
+                });
+            });
+        });
+
+        // Close on outside click
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#' + inputId) && !e.target.closest('#' + listId)) {
+                list.classList.remove('show');
+            }
+        });
+    }
+
+    // =====================================================
+    // SECTION 1: ENTRADA DE MERCANCIA
+    // =====================================================
+    // Set today's date
+    document.getElementById('entFecha').valueAsDate = new Date();
+
+    // Autocomplete
+    setupAutocomplete('entBuscarProducto', 'entAutoComplete', function(producto) {
+        entradaAddProducto(producto);
+    });
+
+    function entradaAddProducto(producto) {
+        // Check if already in the list
+        var exists = entradaLineas.find(function(l) { return l.productoId === producto.id; });
+        if (exists) {
+            alert('Este producto ya esta en la lista. Modifique la cantidad.');
+            return;
+        }
+        entradaLineas.push({
+            productoId: producto.id,
+            sku: producto.sku || '',
+            nombre: producto.nombre || producto.name || '',
+            cantidad: 1,
+            precioCosto: producto.precioCosto || producto.precio || 0
+        });
+        renderEntradaTabla();
+    }
+
+    window.entradaAddRow = function() {
+        // Add an empty row for manual entry
+        entradaLineas.push({
+            productoId: '',
+            sku: '',
+            nombre: '',
+            cantidad: 1,
+            precioCosto: 0
+        });
+        renderEntradaTabla();
+    };
+
+    window.entradaRemoveRow = function(index) {
+        entradaLineas.splice(index, 1);
+        renderEntradaTabla();
+    };
+
+    window.entradaUpdateField = function(index, field, value) {
+        if (field === 'cantidad') {
+            entradaLineas[index].cantidad = parseInt(value) || 0;
+        } else if (field === 'precioCosto') {
+            entradaLineas[index].precioCosto = parseFloat(value) || 0;
+        }
+        recalcEntradaTotales();
+    };
+
+    function renderEntradaTabla() {
+        var tbody = document.getElementById('entProductosBody');
+        if (entradaLineas.length === 0) {
+            tbody.innerHTML = '<tr id="entEmptyRow"><td colspan="6" style="text-align:center; color:var(--text-light); padding:30px;">' +
+                '<i class="fas fa-box-open" style="font-size:24px; margin-bottom:8px; display:block;"></i>' +
+                'Busque y agregue productos para registrar la entrada</td></tr>';
+            recalcEntradaTotales();
+            return;
+        }
+
+        tbody.innerHTML = entradaLineas.map(function(linea, i) {
+            var totalLinea = linea.cantidad * linea.precioCosto;
+            return '<tr>' +
+                '<td>' + (linea.sku || '<span style="color:var(--text-light)">N/A</span>') + '</td>' +
+                '<td>' + (linea.nombre || '<span style="color:var(--text-light)">Producto manual</span>') + '</td>' +
+                '<td><input type="number" class="form-control" value="' + linea.cantidad + '" min="1" onchange="entradaUpdateField(' + i + ',\'cantidad\',this.value)" style="width:100px;"></td>' +
+                '<td><input type="number" class="form-control" value="' + linea.precioCosto.toFixed(2) + '" min="0" step="0.01" onchange="entradaUpdateField(' + i + ',\'precioCosto\',this.value)" style="width:120px;"></td>' +
+                '<td style="font-weight:600;">B/. ' + totalLinea.toFixed(2) + '</td>' +
+                '<td><button class="btn-icon delete" onclick="entradaRemoveRow(' + i + ')"><i class="fas fa-trash"></i></button></td>' +
+                '</tr>';
+        }).join('');
+        recalcEntradaTotales();
+    }
+
+    function recalcEntradaTotales() {
+        var subtotal = 0;
+        entradaLineas.forEach(function(l) {
+            subtotal += l.cantidad * l.precioCosto;
+        });
+        var itbms = subtotal * ITBMS_RATE;
+        var total = subtotal + itbms;
+        document.getElementById('entSubtotal').textContent = 'B/. ' + subtotal.toFixed(2);
+        document.getElementById('entItbms').textContent = 'B/. ' + itbms.toFixed(2);
+        document.getElementById('entTotal').textContent = 'B/. ' + total.toFixed(2);
+    }
+
+    window.entradaRegistrar = async function() {
+        var numFactura = document.getElementById('entNumFactura').value.trim();
+        var proveedorId = document.getElementById('entProveedor').value;
+        var fecha = document.getElementById('entFecha').value;
+
+        if (!numFactura) { alert('Ingrese el numero de factura del proveedor.'); return; }
+        if (!proveedorId) { alert('Seleccione un proveedor.'); return; }
+        if (entradaLineas.length === 0) { alert('Agregue al menos un producto.'); return; }
+
+        // Validate lines
+        for (var i = 0; i < entradaLineas.length; i++) {
+            if (entradaLineas[i].cantidad <= 0) {
+                alert('La cantidad del producto "' + (entradaLineas[i].nombre || 'Linea ' + (i+1)) + '" debe ser mayor a 0.');
+                return;
+            }
+        }
+
+        var btn = document.getElementById('btnRegistrarEntrada');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+
+        try {
+            var subtotal = 0;
+            entradaLineas.forEach(function(l) { subtotal += l.cantidad * l.precioCosto; });
+            var itbms = subtotal * ITBMS_RATE;
+            var total = subtotal + itbms;
+
+            var proveedor = allProveedores.find(function(p) { return p.id === proveedorId; });
+
+            // Save entrada document
+            var entradaId = await ECSA.Firebase.addDocument('entradas_mercancia', {
+                numFactura: numFactura,
+                proveedorId: proveedorId,
+                proveedorNombre: proveedor ? (proveedor.nombre || proveedor.name || proveedor.empresa) : proveedorId,
+                fecha: fecha,
+                lineas: entradaLineas.map(function(l) {
+                    return {
+                        productoId: l.productoId,
+                        sku: l.sku,
+                        nombre: l.nombre,
+                        cantidad: l.cantidad,
+                        precioCosto: l.precioCosto,
+                        totalLinea: l.cantidad * l.precioCosto
+                    };
+                }),
+                subtotal: subtotal,
+                itbms: itbms,
+                total: total,
+                usuario: ECSA.Firebase.auth.currentUser ? ECSA.Firebase.auth.currentUser.uid : 'sistema',
+                usuarioNombre: currentUserProfile ? currentUserProfile.nombre : 'Sistema'
+            });
+
+            // Update stock for each product
+            for (var j = 0; j < entradaLineas.length; j++) {
+                var linea = entradaLineas[j];
+                if (linea.productoId) {
+                    await ECSA.Firebase.Productos.ajustarStock(
+                        linea.productoId,
+                        linea.cantidad,
+                        'entrada',
+                        'Entrada factura ' + numFactura + ' - Proveedor: ' + (proveedor ? (proveedor.nombre || proveedor.name) : proveedorId)
+                    );
+                }
+            }
+
+            alert('Entrada registrada exitosamente. ID: ' + entradaId);
+
+            // Reset form
+            document.getElementById('entNumFactura').value = '';
+            document.getElementById('entProveedor').value = '';
+            document.getElementById('entFecha').valueAsDate = new Date();
+            entradaLineas = [];
+            renderEntradaTabla();
+
+            // Refresh products data
+            await cargarProductos();
+            cargarAlertasCount();
+
+        } catch (err) {
+            console.error('Error registrando entrada:', err);
+            alert('Error al registrar entrada: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Registrar Entrada';
+        }
+    };
+
+    window.entradaImprimir = function() {
+        document.getElementById('printDate').textContent = new Date().toLocaleDateString('es-PA');
+        window.print();
+    };
+
+    // =====================================================
+    // SECTION 2: SALIDA Y TRANSFERENCIA
+    // =====================================================
+    setupAutocomplete('salBuscarProducto', 'salAutoComplete', function(producto) {
+        document.getElementById('salProductoNombre').value = (producto.nombre || producto.name) + ' (SKU: ' + (producto.sku || 'N/A') + ')';
+        document.getElementById('salProductoId').value = producto.id;
+        document.getElementById('salProductoSku').value = producto.sku || '';
+        document.getElementById('salStockActual').value = producto.stock || 0;
+    });
+
+    window.salidaRegistrar = async function() {
+        var productoId = document.getElementById('salProductoId').value;
+        var productoNombre = document.getElementById('salProductoNombre').value;
+        var cantidad = parseInt(document.getElementById('salCantidad').value) || 0;
+        var destino = document.getElementById('salDestino').value;
+        var motivo = document.getElementById('salMotivo').value.trim();
+        var stockActual = parseInt(document.getElementById('salStockActual').value) || 0;
+
+        if (!productoId) { alert('Seleccione un producto.'); return; }
+        if (cantidad <= 0) { alert('La cantidad debe ser mayor a 0.'); return; }
+        if (cantidad > stockActual) { alert('La cantidad supera el stock disponible (' + stockActual + ').'); return; }
+        if (!destino) { alert('Seleccione un destino.'); return; }
+        if (!motivo) { alert('Ingrese el motivo de la salida.'); return; }
+
+        var btn = document.getElementById('btnRegistrarSalida');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+
+        try {
+            var destinoLabel = {
+                'tienda': 'Tienda',
+                'consumo_interno': 'Consumo Interno',
+                'devolucion_proveedor': 'Devolucion a Proveedor'
+            };
+
+            // Save salida document
+            await ECSA.Firebase.addDocument('salidas_mercancia', {
+                productoId: productoId,
+                productoNombre: productoNombre,
+                sku: document.getElementById('salProductoSku').value,
+                cantidad: cantidad,
+                destino: destino,
+                destinoLabel: destinoLabel[destino] || destino,
+                motivo: motivo,
+                usuario: ECSA.Firebase.auth.currentUser ? ECSA.Firebase.auth.currentUser.uid : 'sistema',
+                usuarioNombre: currentUserProfile ? currentUserProfile.nombre : 'Sistema'
+            });
+
+            // Decrease stock
+            await ECSA.Firebase.Productos.ajustarStock(
+                productoId,
+                -cantidad,
+                'salida',
+                'Salida a ' + (destinoLabel[destino] || destino) + ': ' + motivo
+            );
+
+            alert('Salida registrada exitosamente.');
+
+            // Reset form
+            document.getElementById('salBuscarProducto').value = '';
+            document.getElementById('salProductoNombre').value = '';
+            document.getElementById('salProductoId').value = '';
+            document.getElementById('salProductoSku').value = '';
+            document.getElementById('salStockActual').value = '';
+            document.getElementById('salCantidad').value = '';
+            document.getElementById('salDestino').value = '';
+            document.getElementById('salMotivo').value = '';
+
+            // Refresh
+            await cargarProductos();
+            cargarAlertasCount();
+            cargarSalidasRecientes();
+
+        } catch (err) {
+            console.error('Error registrando salida:', err);
+            alert('Error al registrar salida: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Registrar Salida';
+        }
+    };
+
+    async function cargarSalidasRecientes() {
+        var tbody = document.getElementById('salidasRecientesBody');
+        try {
+            var salidas = await ECSA.Firebase.getDocuments('salidas_mercancia', {
+                orderBy: 'createdAt',
+                direction: 'desc',
+                limit: 20
+            });
+
+            if (salidas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-light); padding:20px;">No hay salidas registradas</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = salidas.map(function(s) {
+                var fecha = s.createdAt ? (s.createdAt.toDate ? s.createdAt.toDate().toLocaleDateString('es-PA') : new Date(s.createdAt).toLocaleDateString('es-PA')) : 'N/A';
+                return '<tr>' +
+                    '<td>' + fecha + '</td>' +
+                    '<td>' + (s.sku || 'N/A') + '</td>' +
+                    '<td>' + (s.productoNombre || '') + '</td>' +
+                    '<td style="font-weight:600; color:var(--danger);">-' + s.cantidad + '</td>' +
+                    '<td>' + (s.destinoLabel || s.destino || '') + '</td>' +
+                    '<td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + (s.motivo || '') + '">' + (s.motivo || '') + '</td>' +
+                    '<td>' + (s.usuarioNombre || s.usuario || '') + '</td>' +
+                    '</tr>';
+            }).join('');
+        } catch (err) {
+            console.error('Error cargando salidas recientes:', err);
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-light); padding:20px;">Error al cargar salidas</td></tr>';
+        }
+    }
+
+    // =====================================================
+    // SECTION 3: INVENTARIO FISICO
+    // =====================================================
+    window.inventarioCargar = async function() {
+        var tbody = document.getElementById('inventarioBody');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-light); padding:30px;"><i class="fas fa-spinner fa-spin"></i> Cargando productos...</td></tr>';
+
+        try {
+            await cargarProductos();
+            inventarioProductos = allProductos.map(function(p) {
+                return {
+                    id: p.id,
+                    sku: p.sku || '',
+                    nombre: p.nombre || p.name || '',
+                    stockSistema: p.stock || 0,
+                    conteoFisico: null
+                };
+            });
+            renderInventarioTabla();
+        } catch (err) {
+            console.error('Error cargando inventario:', err);
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:30px;">Error al cargar productos</td></tr>';
+        }
+    };
+
+    function renderInventarioTabla(filtro) {
+        var tbody = document.getElementById('inventarioBody');
+        var items = inventarioProductos;
+
+        if (filtro) {
+            filtro = filtro.toLowerCase();
+            items = items.filter(function(p) {
+                return p.sku.toLowerCase().indexOf(filtro) !== -1 || p.nombre.toLowerCase().indexOf(filtro) !== -1;
+            });
+        }
+
+        document.getElementById('invResumen').textContent = items.length + ' productos cargados';
+
+        if (items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-light); padding:30px;">No se encontraron productos</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = items.map(function(p, idx) {
+            var originalIdx = inventarioProductos.indexOf(p);
+            var conteo = p.conteoFisico;
+            var diff = conteo !== null ? conteo - p.stockSistema : null;
+            var rowClass = '';
+            if (diff !== null && diff !== 0) {
+                rowClass = Math.abs(diff) >= 5 ? 'diff-row-critical' : 'diff-row';
+            }
+            return '<tr class="' + rowClass + '">' +
+                '<td>' + p.sku + '</td>' +
+                '<td>' + p.nombre + '</td>' +
+                '<td style="font-weight:600;">' + p.stockSistema + '</td>' +
+                '<td><input type="number" class="form-control" value="' + (conteo !== null ? conteo : '') + '" min="0" placeholder="-" ' +
+                'onchange="inventarioUpdateConteo(' + originalIdx + ', this.value)" style="width:100px;"></td>' +
+                '<td style="font-weight:600;' + (diff !== null && diff !== 0 ? (diff > 0 ? 'color:var(--success);' : 'color:var(--danger);') : '') + '">' +
+                (diff !== null ? (diff > 0 ? '+' : '') + diff : '-') + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    window.inventarioUpdateConteo = function(index, value) {
+        if (value === '' || value === null) {
+            inventarioProductos[index].conteoFisico = null;
+        } else {
+            inventarioProductos[index].conteoFisico = parseInt(value) || 0;
+        }
+        var filtro = document.getElementById('invBuscar').value.trim();
+        renderInventarioTabla(filtro || null);
+    };
+
+    // Filter
+    document.getElementById('invBuscar').addEventListener('input', function() {
+        renderInventarioTabla(this.value.trim() || null);
+    });
+
+    window.inventarioAplicarAjuste = async function() {
+        // Find differences
+        var diferencias = inventarioProductos.filter(function(p) {
+            return p.conteoFisico !== null && p.conteoFisico !== p.stockSistema;
+        });
+
+        if (diferencias.length === 0) {
+            alert('No hay diferencias para ajustar. Ingrese los conteos fisicos primero.');
+            return;
+        }
+
+        var confirmMsg = 'Se encontraron ' + diferencias.length + ' diferencia(s):\n\n';
+        diferencias.forEach(function(d) {
+            var diff = d.conteoFisico - d.stockSistema;
+            confirmMsg += '- ' + d.nombre + ': Sistema=' + d.stockSistema + ', Conteo=' + d.conteoFisico + ' (Dif: ' + (diff > 0 ? '+' : '') + diff + ')\n';
+        });
+        confirmMsg += '\nDesea aplicar estos ajustes?';
+
+        if (!confirm(confirmMsg)) return;
+
+        try {
+            // Save adjustment record
+            var ajusteId = await ECSA.Firebase.addDocument('inventario_ajustes', {
+                fecha: new Date().toISOString(),
+                totalDiferencias: diferencias.length,
+                detalles: diferencias.map(function(d) {
+                    return {
+                        productoId: d.id,
+                        sku: d.sku,
+                        nombre: d.nombre,
+                        stockSistema: d.stockSistema,
+                        conteoFisico: d.conteoFisico,
+                        diferencia: d.conteoFisico - d.stockSistema
+                    };
+                }),
+                usuario: ECSA.Firebase.auth.currentUser ? ECSA.Firebase.auth.currentUser.uid : 'sistema',
+                usuarioNombre: currentUserProfile ? currentUserProfile.nombre : 'Sistema'
+            });
+
+            // Update stock for each difference
+            for (var i = 0; i < diferencias.length; i++) {
+                var d = diferencias[i];
+                var diff = d.conteoFisico - d.stockSistema;
+                await ECSA.Firebase.Productos.ajustarStock(
+                    d.id,
+                    diff,
+                    'ajuste',
+                    'Ajuste inventario fisico. Conteo: ' + d.conteoFisico + ', Sistema: ' + d.stockSistema
+                );
+            }
+
+            alert('Ajuste de inventario aplicado exitosamente. ' + diferencias.length + ' producto(s) ajustado(s). ID: ' + ajusteId);
+
+            // Reload
+            await cargarProductos();
+            cargarAlertasCount();
+            inventarioCargar();
+
+        } catch (err) {
+            console.error('Error aplicando ajuste:', err);
+            alert('Error al aplicar ajuste: ' + err.message);
+        }
+    };
+
+    // =====================================================
+    // SECTION 4: HISTORIAL DE MOVIMIENTOS
+    // =====================================================
+    async function historialCargar() {
+        var tbody = document.getElementById('historialBody');
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-light); padding:30px;"><i class="fas fa-spinner fa-spin"></i> Cargando movimientos...</td></tr>';
+
+        try {
+            historialMovimientos = await ECSA.Firebase.getDocuments('inventario_movimientos', {
+                orderBy: 'createdAt',
+                direction: 'desc',
+                limit: 200
+            });
+            historialFiltrado = historialMovimientos.slice();
+            renderHistorial();
+        } catch (err) {
+            console.error('Error cargando historial:', err);
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--danger); padding:30px;">Error al cargar movimientos</td></tr>';
+        }
+    }
+
+    function renderHistorial() {
+        var tbody = document.getElementById('historialBody');
+
+        if (historialFiltrado.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-light); padding:30px;">No se encontraron movimientos</td></tr>';
+            document.getElementById('histResumen').textContent = '0 movimientos';
+            return;
+        }
+
+        document.getElementById('histResumen').textContent = historialFiltrado.length + ' movimiento(s)';
+
+        tbody.innerHTML = historialFiltrado.map(function(m) {
+            var fecha = 'N/A';
+            if (m.createdAt) {
+                try {
+                    fecha = m.createdAt.toDate ? m.createdAt.toDate().toLocaleString('es-PA') : new Date(m.createdAt).toLocaleString('es-PA');
+                } catch(e) { fecha = 'N/A'; }
+            }
+            var tipoClass = m.tipo || 'ajuste';
+            var cantidadColor = (m.cantidad || 0) >= 0 ? 'var(--success)' : 'var(--danger)';
+            var cantidadText = (m.cantidad || 0) >= 0 ? '+' + m.cantidad : '' + m.cantidad;
+
+            return '<tr>' +
+                '<td style="white-space:nowrap;">' + fecha + '</td>' +
+                '<td>' + (m.productoNombre || '') + '</td>' +
+                '<td>' + (m.sku || 'N/A') + '</td>' +
+                '<td><span class="badge-status ' + tipoClass + '">' + (m.tipo || 'N/A') + '</span></td>' +
+                '<td style="font-weight:600; color:' + cantidadColor + ';">' + cantidadText + '</td>' +
+                '<td>' + (m.stockAnterior !== undefined ? m.stockAnterior : '-') + '</td>' +
+                '<td>' + (m.stockNuevo !== undefined ? m.stockNuevo : '-') + '</td>' +
+                '<td>' + (m.usuario || '') + '</td>' +
+                '<td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + (m.nota || '') + '">' + (m.nota || '') + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    window.historialFiltrar = function() {
+        var buscar = document.getElementById('histBuscar').value.toLowerCase().trim();
+        var tipo = document.getElementById('histTipo').value;
+        var desde = document.getElementById('histFechaDesde').value;
+        var hasta = document.getElementById('histFechaHasta').value;
+
+        historialFiltrado = historialMovimientos.filter(function(m) {
+            // Filter by product name
+            if (buscar) {
+                var nombre = (m.productoNombre || '').toLowerCase();
+                var sku = (m.sku || '').toLowerCase();
+                if (nombre.indexOf(buscar) === -1 && sku.indexOf(buscar) === -1) return false;
+            }
+            // Filter by type
+            if (tipo && m.tipo !== tipo) return false;
+            // Filter by date range
+            if (desde || hasta) {
+                var fechaDoc = null;
+                if (m.createdAt) {
+                    try {
+                        fechaDoc = m.createdAt.toDate ? m.createdAt.toDate() : new Date(m.createdAt);
+                    } catch(e) { return true; }
+                }
+                if (!fechaDoc) return true;
+                var fechaStr = fechaDoc.toISOString().split('T')[0];
+                if (desde && fechaStr < desde) return false;
+                if (hasta && fechaStr > hasta) return false;
+            }
+            return true;
+        });
+
+        renderHistorial();
+    };
+
+    // Also filter on typing
+    document.getElementById('histBuscar').addEventListener('input', function() {
+        historialFiltrar();
+    });
+    document.getElementById('histTipo').addEventListener('change', function() {
+        historialFiltrar();
+    });
+
+    window.historialExportCSV = function() {
+        if (historialFiltrado.length === 0) {
+            alert('No hay datos para exportar.');
+            return;
+        }
+
+        var headers = ['Fecha', 'Producto', 'SKU', 'Tipo', 'Cantidad', 'Stock Anterior', 'Stock Nuevo', 'Usuario', 'Nota'];
+        var rows = historialFiltrado.map(function(m) {
+            var fecha = 'N/A';
+            if (m.createdAt) {
+                try {
+                    fecha = m.createdAt.toDate ? m.createdAt.toDate().toLocaleString('es-PA') : new Date(m.createdAt).toLocaleString('es-PA');
+                } catch(e) {}
+            }
+            return [
+                '"' + fecha + '"',
+                '"' + (m.productoNombre || '').replace(/"/g, '""') + '"',
+                '"' + (m.sku || '') + '"',
+                '"' + (m.tipo || '') + '"',
+                m.cantidad || 0,
+                m.stockAnterior !== undefined ? m.stockAnterior : '',
+                m.stockNuevo !== undefined ? m.stockNuevo : '',
+                '"' + (m.usuario || '') + '"',
+                '"' + (m.nota || '').replace(/"/g, '""') + '"'
+            ].join(',');
+        });
+
+        var csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = 'movimientos_inventario_' + new Date().toISOString().split('T')[0] + '.csv';
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // =====================================================
+    // SECTION 5: ALERTAS DE STOCK BAJO
+    // =====================================================
+    async function alertasCargar() {
+        var tbody = document.getElementById('alertasBody');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-light); padding:30px;"><i class="fas fa-spinner fa-spin"></i> Cargando alertas...</td></tr>';
+
+        try {
+            await cargarProductos();
+            var criticos = 0;
+            var bajos = 0;
+            var normales = 0;
+
+            alertasProductos = [];
+            allProductos.forEach(function(p) {
+                var stock = p.stock || 0;
+                var minStock = p.minStock || 0;
+                if (stock <= minStock) {
+                    alertasProductos.push(p);
+                    if (stock === 0) criticos++;
+                    else bajos++;
+                } else {
+                    normales++;
+                }
+            });
+
+            document.getElementById('kpiCriticos').textContent = criticos;
+            document.getElementById('kpiBajos').textContent = bajos;
+            document.getElementById('kpiNormales').textContent = normales;
+
+            if (alertasProductos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--success); padding:30px;"><i class="fas fa-check-circle" style="font-size:20px; margin-right:8px;"></i>Todos los productos tienen stock suficiente</td></tr>';
+                return;
+            }
+
+            // Sort: critical first
+            alertasProductos.sort(function(a, b) {
+                return (a.stock || 0) - (b.stock || 0);
+            });
+
+            tbody.innerHTML = alertasProductos.map(function(p) {
+                var stock = p.stock || 0;
+                var minStock = p.minStock || 0;
+                var diff = stock - minStock;
+                var estadoClass = stock === 0 ? 'critico' : 'bajo';
+                var estadoText = stock === 0 ? 'Critico' : 'Bajo';
+                return '<tr>' +
+                    '<td>' + (p.sku || 'N/A') + '</td>' +
+                    '<td>' + (p.nombre || p.name || '') + '</td>' +
+                    '<td style="font-weight:600;">' + stock + '</td>' +
+                    '<td>' + minStock + '</td>' +
+                    '<td style="font-weight:600; color:var(--danger);">' + diff + '</td>' +
+                    '<td><span class="badge-status ' + estadoClass + '">' + estadoText + '</span></td>' +
+                    '</tr>';
+            }).join('');
+        } catch (err) {
+            console.error('Error cargando alertas:', err);
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--danger); padding:30px;">Error al cargar alertas</td></tr>';
+        }
+    }
+
+    window.generarOrdenCompraPDF = function() {
+        if (alertasProductos.length === 0) {
+            alert('No hay productos con stock bajo para generar la orden.');
+            return;
+        }
+
+        // Build a printable purchase order in a new window
+        var html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">' +
+            '<title>Orden de Compra - ECSA</title>' +
+            '<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">' +
+            '<style>' +
+            'body { font-family: "Poppins", sans-serif; padding: 30px; color: #333; max-width: 800px; margin: 0 auto; }' +
+            '.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2E9CDB; padding-bottom: 20px; }' +
+            '.header h1 { color: #2E9CDB; font-size: 22px; margin-bottom: 4px; }' +
+            '.header p { font-size: 12px; color: #777; margin: 2px 0; }' +
+            '.info-row { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px; }' +
+            '.info-row div { flex: 1; }' +
+            'table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }' +
+            'th { background: #2E9CDB; color: white; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; }' +
+            'td { padding: 8px 12px; border-bottom: 1px solid #ddd; }' +
+            'tr:nth-child(even) td { background: #f9f9f9; }' +
+            '.footer { margin-top: 40px; font-size: 11px; color: #777; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; }' +
+            '.signature { margin-top: 60px; display: flex; justify-content: space-between; }' +
+            '.signature div { text-align: center; width: 200px; border-top: 1px solid #333; padding-top: 8px; font-size: 12px; }' +
+            '@media print { body { padding: 15px; } }' +
+            '</style></head><body>' +
+            '<div class="header">' +
+            '<h1>EMPRESAS CENTRALES SA</h1>' +
+            '<p>Tel: 6090-9890 | Email: ventas@ecsa.com</p>' +
+            '<h2 style="color: #FF6B00; font-size: 18px; margin-top: 12px;">ORDEN DE COMPRA</h2>' +
+            '</div>' +
+            '<div class="info-row">' +
+            '<div><strong>Fecha:</strong> ' + new Date().toLocaleDateString('es-PA') + '</div>' +
+            '<div><strong>No. Orden:</strong> OC-' + Date.now() + '</div>' +
+            '<div><strong>Generado por:</strong> ' + (currentUserProfile ? currentUserProfile.nombre : 'Sistema') + '</div>' +
+            '</div>' +
+            '<table><thead><tr><th>#</th><th>SKU</th><th>Producto</th><th>Stock Actual</th><th>Stock Minimo</th><th>Cantidad Sugerida</th></tr></thead><tbody>';
+
+        alertasProductos.forEach(function(p, i) {
+            var stock = p.stock || 0;
+            var minStock = p.minStock || 0;
+            var sugerida = Math.max(minStock * 2 - stock, minStock - stock);
+            html += '<tr>' +
+                '<td>' + (i + 1) + '</td>' +
+                '<td>' + (p.sku || 'N/A') + '</td>' +
+                '<td>' + (p.nombre || p.name || '') + '</td>' +
+                '<td>' + stock + '</td>' +
+                '<td>' + minStock + '</td>' +
+                '<td style="font-weight:600; color: #FF6B00;">' + sugerida + '</td>' +
+                '</tr>';
+        });
+
+        html += '</tbody></table>' +
+            '<p style="font-size:12px; color:#777;"><strong>Total de productos:</strong> ' + alertasProductos.length + '</p>' +
+            '<div class="signature">' +
+            '<div>Solicitado por</div>' +
+            '<div>Aprobado por</div>' +
+            '<div>Recibido por</div>' +
+            '</div>' +
+            '<div class="footer">Empresas Centrales SA - Sistema de Bodega - Documento generado automaticamente</div>' +
+            '</body></html>';
+
+        var win = window.open('', '_blank');
+        win.document.write(html);
+        win.document.close();
+        setTimeout(function() { win.print(); }, 500);
+    };
+
+    // =====================================================
+    // SECTION 6: DESPACHO DE PEDIDOS
+    // =====================================================
+    var despachoPedidos = [];
+    var despachoHistorial = [];
+
+    window.Despacho = {
+        async cargar() {
+            try {
+                var ordenes = await ECSA.Firebase.getDocuments('ordenes');
+                despachoPedidos = (ordenes || []).filter(function(o) {
+                    return o.estado === 'confirmada' || o.estado === 'pendiente' || o.estado === 'en_preparacion' || o.estado === 'listo' || o.estado === 'despachado';
+                });
+
+                // Apply filters
+                var filtroEstado = document.getElementById('despFiltroEstado').value;
+                var filtroEntrega = document.getElementById('despFiltroEntrega').value;
+                var buscar = (document.getElementById('despBuscar').value || '').toLowerCase().trim();
+
+                var filtered = despachoPedidos;
+                if (filtroEstado) filtered = filtered.filter(function(o) { return o.estado === filtroEstado; });
+                if (filtroEntrega) filtered = filtered.filter(function(o) { return (o.metodoEntrega || 'retiro') === filtroEntrega; });
+                if (buscar) filtered = filtered.filter(function(o) {
+                    return (o.numeroOrden || o.id || '').toLowerCase().indexOf(buscar) !== -1 ||
+                           (o.clienteNombre || o.cliente || '').toLowerCase().indexOf(buscar) !== -1;
+                });
+
+                // KPIs
+                var hoyStr = new Date().toISOString().split('T')[0];
+                document.getElementById('kpiPendientesDesp').textContent = despachoPedidos.filter(function(o) { return o.estado === 'pendiente' || o.estado === 'confirmada'; }).length;
+                document.getElementById('kpiEnPreparacion').textContent = despachoPedidos.filter(function(o) { return o.estado === 'en_preparacion'; }).length;
+                document.getElementById('kpiListosDesp').textContent = despachoPedidos.filter(function(o) { return o.estado === 'listo'; }).length;
+                document.getElementById('kpiDespachados').textContent = despachoPedidos.filter(function(o) { return o.estado === 'despachado' && (o.fechaDespacho || '').indexOf(hoyStr) === 0; }).length;
+
+                // Render
+                var body = document.getElementById('despachosBody');
+                if (filtered.length === 0) {
+                    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:30px;">No hay pedidos</td></tr>';
+                    return;
+                }
+
+                filtered.sort(function(a, b) { return (b.fecha || b.fechaCreacion || '').localeCompare(a.fecha || a.fechaCreacion || ''); });
+
+                body.innerHTML = filtered.map(function(o) {
+                    var numOrden = o.numeroOrden || 'ORD-' + (o.id || '').substring(0, 5).toUpperCase();
+                    var cliente = o.clienteNombre || o.cliente || 'Sin nombre';
+                    var fecha = o.fecha || o.fechaCreacion || '';
+                    if (fecha && fecha.toDate) fecha = fecha.toDate().toISOString().split('T')[0];
+                    var prods = (o.items || o.lineas || o.productos || []).length + ' items';
+                    var entrega = (o.metodoEntrega || 'retiro') === 'domicilio' ? '<span class="badge-status bajo">Domicilio</span>' : '<span class="badge-status normal">Retiro Tienda</span>';
+                    var estadoMap = {
+                        'confirmada': '<span class="badge-status bajo" style="background:#fff3e0;color:#e65100;">Pendiente</span>',
+                        'pendiente': '<span class="badge-status bajo" style="background:#fff3e0;color:#e65100;">Pendiente</span>',
+                        'en_preparacion': '<span class="badge-status bajo" style="background:#e3f2fd;color:#1565c0;">En Preparacion</span>',
+                        'listo': '<span class="badge-status normal" style="background:#e8f5e9;color:#2e7d32;">Listo</span>',
+                        'despachado': '<span class="badge-status normal" style="background:#e0f7fa;color:#00695c;">Despachado</span>'
+                    };
+                    var estado = estadoMap[o.estado] || o.estado;
+                    return '<tr>' +
+                        '<td><strong>' + numOrden + '</strong></td>' +
+                        '<td>' + cliente + '</td>' +
+                        '<td>' + (typeof fecha === 'string' ? fecha.substring(0, 10) : '') + '</td>' +
+                        '<td>' + prods + '</td>' +
+                        '<td>' + entrega + '</td>' +
+                        '<td>' + estado + '</td>' +
+                        '<td style="white-space:nowrap;">' +
+                            '<button class="btn btn-primary btn-xs" onclick="Despacho.verDetalle(\'' + o.id + '\')" title="Ver"><i class="fas fa-eye"></i></button> ' +
+                            (o.estado === 'confirmada' || o.estado === 'pendiente' ? '<button class="btn btn-info btn-xs" onclick="Despacho.iniciarPreparacion(\'' + o.id + '\')" title="Preparar"><i class="fas fa-play"></i></button> ' : '') +
+                            (o.estado === 'en_preparacion' ? '<button class="btn btn-success btn-xs" onclick="Despacho.marcarListo(\'' + o.id + '\')" title="Listo"><i class="fas fa-check"></i></button> ' : '') +
+                            (o.estado === 'listo' ? '<button class="btn btn-secondary btn-xs" onclick="Despacho.despachar(\'' + o.id + '\')" title="Despachar"><i class="fas fa-truck"></i></button>' : '') +
+                        '</td></tr>';
+                }).join('');
+            } catch(e) {
+                console.error('Error cargando despachos:', e);
+                document.getElementById('despachosBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:20px;">Error: ' + e.message + '</td></tr>';
+            }
+        },
+
+        verDetalle(id) {
+            var o = despachoPedidos.find(function(x) { return x.id === id; });
+            if (!o) return;
+            var numOrden = o.numeroOrden || 'ORD-' + (o.id || '').substring(0, 5).toUpperCase();
+            document.getElementById('modalPedidoTitulo').textContent = 'Pedido ' + numOrden;
+            var items = o.items || o.lineas || o.productos || [];
+            var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">' +
+                '<div><strong>Cliente:</strong> ' + (o.clienteNombre || o.cliente || 'N/A') + '</div>' +
+                '<div><strong>Entrega:</strong> ' + (o.metodoEntrega === 'domicilio' ? 'Domicilio' : 'Retiro en tienda') + '</div>' +
+                '<div><strong>Estado:</strong> ' + (o.estado || '') + '</div>' +
+                '<div><strong>Total:</strong> $' + (o.total || 0).toFixed(2) + '</div>' +
+                (o.direccion ? '<div style="grid-column:1/-1;"><strong>Direccion:</strong> ' + o.direccion + '</div>' : '') +
+                '</div>';
+            html += '<h4 style="font-size:14px;margin-bottom:8px;">Productos</h4>';
+            html += '<table style="width:100%;"><thead><tr><th>Producto</th><th>Cant.</th><th>Estado</th></tr></thead><tbody>';
+            items.forEach(function(item, idx) {
+                html += '<tr><td>' + (item.nombre || item.productoNombre || 'Producto') + '</td>' +
+                    '<td>' + (item.cantidad || item.qty || 1) + '</td>' +
+                    '<td><input type="checkbox" id="checkItem' + idx + '" ' + (item.recolectado ? 'checked' : '') + '> Recolectado</td></tr>';
+            });
+            html += '</tbody></table>';
+            if (o.estado === 'en_preparacion') {
+                html += '<div style="margin-top:16px;display:flex;gap:8px;">' +
+                    '<button class="btn btn-success" onclick="Despacho.marcarListo(\'' + id + '\')"><i class="fas fa-check"></i> Marcar como Listo</button>' +
+                    '</div>';
+            }
+            if (o.estado === 'listo') {
+                html += '<div style="margin-top:16px;">';
+                if (o.metodoEntrega === 'domicilio') {
+                    html += '<div class="form-group"><label>Transportista</label><select class="form-control" id="despTransportista"><option value="">Seleccionar...</option></select></div>';
+                    html += '<div class="form-group"><label>Fecha/Hora Estimada</label><input type="datetime-local" class="form-control" id="despFechaEstimada"></div>';
+                    html += '<button class="btn btn-primary" onclick="Despacho.despacharDomicilio(\'' + id + '\')"><i class="fas fa-truck"></i> Despachar a Domicilio</button>';
+                } else {
+                    html += '<div class="form-group"><label>Nombre de quien retira</label><input type="text" class="form-control" id="despRetirado" placeholder="Nombre completo"></div>';
+                    html += '<button class="btn btn-success" onclick="Despacho.entregarRetiro(\'' + id + '\')"><i class="fas fa-hand-holding"></i> Entregar</button>';
+                }
+                html += '</div>';
+            }
+            document.getElementById('modalPedidoBody').innerHTML = html;
+            document.getElementById('modalDetallePedido').style.display = 'flex';
+
+            // Load transportistas if domicilio
+            if (o.estado === 'listo' && o.metodoEntrega === 'domicilio') {
+                ECSA.Firebase.getDocuments('transportistas').then(function(transp) {
+                    var sel = document.getElementById('despTransportista');
+                    if (sel && transp) {
+                        transp.forEach(function(t) {
+                            sel.innerHTML += '<option value="' + t.id + '">' + (t.nombre || '') + ' - ' + (t.placa || '') + '</option>';
+                        });
+                    }
+                });
+            }
+        },
+
+        async iniciarPreparacion(id) {
+            try {
+                await ECSA.Firebase.updateDocument('ordenes', id, {
+                    estado: 'en_preparacion',
+                    fechaInicioPrep: new Date().toISOString(),
+                    preparadoPor: currentUserProfile ? (currentUserProfile.nombre || currentUserProfile.email) : 'bodeguero'
+                });
+                showToast('Preparacion iniciada', 'success');
+                this.cargar();
+            } catch(e) { showToast('Error: ' + e.message, 'error'); }
+        },
+
+        async marcarListo(id) {
+            try {
+                var o = despachoPedidos.find(function(x) { return x.id === id; });
+                // Descontar stock
+                if (o) {
+                    var items = o.items || o.lineas || o.productos || [];
+                    for (var i = 0; i < items.length; i++) {
+                        var item = items[i];
+                        var prodId = item.productoId || item.id;
+                        if (prodId) {
+                            try {
+                                var prod = await ECSA.Firebase.getDocument('productos', prodId);
+                                if (prod) {
+                                    var nuevoStock = Math.max(0, (prod.stock || 0) - (item.cantidad || item.qty || 1));
+                                    await ECSA.Firebase.updateDocument('productos', prodId, {
+                                        stock: nuevoStock,
+                                        stockBajo: nuevoStock <= (prod.minStock || 5)
+                                    });
+                                }
+                            } catch(e) { console.error('Error descontando stock:', e); }
+                        }
+                    }
+                }
+                await ECSA.Firebase.updateDocument('ordenes', id, {
+                    estado: 'listo',
+                    fechaListo: new Date().toISOString()
+                });
+                document.getElementById('modalDetallePedido').style.display = 'none';
+                showToast('Pedido listo para despacho', 'success');
+                this.cargar();
+            } catch(e) { showToast('Error: ' + e.message, 'error'); }
+        },
+
+        async despachar(id) {
+            this.verDetalle(id);
+        },
+
+        async despacharDomicilio(id) {
+            var transpId = document.getElementById('despTransportista').value;
+            var fechaEst = document.getElementById('despFechaEstimada').value;
+            if (!transpId) { alert('Seleccione un transportista'); return; }
+            try {
+                await ECSA.Firebase.updateDocument('ordenes', id, {
+                    estado: 'despachado',
+                    fechaDespacho: new Date().toISOString(),
+                    transportistaId: transpId,
+                    fechaEstimadaEntrega: fechaEst || ''
+                });
+                document.getElementById('modalDetallePedido').style.display = 'none';
+                showToast('Pedido despachado', 'success');
+                this.cargar();
+            } catch(e) { showToast('Error: ' + e.message, 'error'); }
+        },
+
+        async entregarRetiro(id) {
+            var retirado = document.getElementById('despRetirado').value.trim();
+            if (!retirado) { alert('Ingrese nombre de quien retira'); return; }
+            try {
+                await ECSA.Firebase.updateDocument('ordenes', id, {
+                    estado: 'despachado',
+                    fechaDespacho: new Date().toISOString(),
+                    retiradoPor: retirado
+                });
+                document.getElementById('modalDetallePedido').style.display = 'none';
+                showToast('Pedido entregado', 'success');
+                this.cargar();
+            } catch(e) { showToast('Error: ' + e.message, 'error'); }
+        },
+
+        async cargarHistorial() {
+            var desde = document.getElementById('despHistDesde').value;
+            var hasta = document.getElementById('despHistHasta').value;
+            try {
+                var ordenes = await ECSA.Firebase.getDocuments('ordenes');
+                despachoHistorial = (ordenes || []).filter(function(o) {
+                    if (o.estado !== 'despachado') return false;
+                    var fDesp = (o.fechaDespacho || '').substring(0, 10);
+                    if (desde && fDesp < desde) return false;
+                    if (hasta && fDesp > hasta) return false;
+                    return true;
+                });
+                var body = document.getElementById('despHistorialBody');
+                if (despachoHistorial.length === 0) {
+                    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:20px;">No hay despachos en el rango</td></tr>';
+                    return;
+                }
+                body.innerHTML = despachoHistorial.map(function(o) {
+                    var numOrden = o.numeroOrden || 'ORD-' + (o.id || '').substring(0, 5).toUpperCase();
+                    var tiempoPrep = '';
+                    if (o.fechaInicioPrep && o.fechaListo) {
+                        var ms = new Date(o.fechaListo) - new Date(o.fechaInicioPrep);
+                        var mins = Math.round(ms / 60000);
+                        tiempoPrep = mins + ' min';
+                    }
+                    return '<tr><td>' + numOrden + '</td><td>' + (o.clienteNombre || o.cliente || '') + '</td>' +
+                        '<td>' + (o.metodoEntrega === 'domicilio' ? 'Domicilio' : 'Retiro') + '</td>' +
+                        '<td>' + (o.transportistaNombre || o.retiradoPor || '-') + '</td>' +
+                        '<td>' + (o.fechaDespacho || '').substring(0, 16).replace('T', ' ') + '</td>' +
+                        '<td>' + tiempoPrep + '</td></tr>';
+                }).join('');
+            } catch(e) {
+                document.getElementById('despHistorialBody').innerHTML = '<tr><td colspan="6" style="color:var(--danger);text-align:center;">Error</td></tr>';
+            }
+        },
+
+        exportarExcel() {
+            if (typeof XLSX === 'undefined') { alert('SheetJS no cargado'); return; }
+            if (despachoPedidos.length === 0) { alert('No hay datos'); return; }
+            var data = [['Orden', 'Cliente', 'Fecha', 'Entrega', 'Estado', 'Total']];
+            despachoPedidos.forEach(function(o) {
+                var numOrden = o.numeroOrden || 'ORD-' + (o.id || '').substring(0, 5).toUpperCase();
+                data.push([numOrden, o.clienteNombre || o.cliente || '', o.fecha || '', o.metodoEntrega || 'retiro', o.estado || '', o.total || 0]);
+            });
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, 'Despachos');
+            XLSX.writeFile(wb, 'despachos_' + new Date().toISOString().split('T')[0] + '.xlsx');
+        }
+    };
+
+    // =====================================================
+    // SECTION 7: TRANSPORTISTAS
+    // =====================================================
+    var transportistasData = [];
+
+    window.Transportistas = {
+        async cargar() {
+            try {
+                transportistasData = await ECSA.Firebase.getDocuments('transportistas') || [];
+                this.render();
+            } catch(e) {
+                console.error('Error cargando transportistas:', e);
+                transportistasData = [];
+            }
+        },
+
+        render() {
+            var body = document.getElementById('transportistasBody');
+            if (transportistasData.length === 0) {
+                body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:20px;">No hay transportistas registrados</td></tr>';
+                return;
+            }
+            body.innerHTML = transportistasData.map(function(t) {
+                return '<tr>' +
+                    '<td><strong>' + (t.nombre || '') + '</strong></td>' +
+                    '<td>' + (t.telefono || '') + '</td>' +
+                    '<td>' + (t.placa || '') + '</td>' +
+                    '<td>' + (t.zona || '') + '</td>' +
+                    '<td>' + (t.entregas || 0) + '</td>' +
+                    '<td><button class="btn btn-danger btn-xs" onclick="Transportistas.eliminar(\'' + t.id + '\')"><i class="fas fa-trash"></i></button></td>' +
+                    '</tr>';
+            }).join('');
+        },
+
+        async agregar() {
+            var nombre = document.getElementById('transpNombre').value.trim();
+            var telefono = document.getElementById('transpTelefono').value.trim();
+            var placa = document.getElementById('transpPlaca').value.trim();
+            var zona = document.getElementById('transpZona').value.trim();
+            if (!nombre) { alert('Ingrese el nombre del transportista'); return; }
+            try {
+                await ECSA.Firebase.addDocument('transportistas', {
+                    nombre: nombre, telefono: telefono, placa: placa, zona: zona, entregas: 0
+                });
+                document.getElementById('transpNombre').value = '';
+                document.getElementById('transpTelefono').value = '';
+                document.getElementById('transpPlaca').value = '';
+                document.getElementById('transpZona').value = '';
+                showToast('Transportista agregado', 'success');
+                this.cargar();
+            } catch(e) { showToast('Error: ' + e.message, 'error'); }
+        },
+
+        async eliminar(id) {
+            if (!confirm('Eliminar este transportista?')) return;
+            try {
+                await ECSA.Firebase.deleteDocument('transportistas', id);
+                showToast('Transportista eliminado', 'success');
+                this.cargar();
+            } catch(e) { showToast('Error: ' + e.message, 'error'); }
+        }
+    };
+
+    // Init despacho dates
+    (function() {
+        var now = new Date();
+        var first = new Date(now.getFullYear(), now.getMonth(), 1);
+        document.getElementById('despHistDesde').value = first.toISOString().split('T')[0];
+        document.getElementById('despHistHasta').value = now.toISOString().split('T')[0];
+    })();
+
+    // Show toast helper if not defined
+    if (typeof showToast === 'undefined') {
+        window.showToast = function(msg, type) {
+            alert(msg);
+        };
+    }
+
+})();
+</script>
+
+</body>
+</html>

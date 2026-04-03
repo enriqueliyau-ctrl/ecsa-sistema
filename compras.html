@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de Compras - Empresas Centrales SA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2E9CDB;
+            --primary-dark: #2480b8;
+            --primary-light: #e8f4fb;
+            --secondary: #FF6B00;
+            --secondary-dark: #d95b00;
+            --white: #ffffff;
+            --bg: #f0f2f5;
+            --text: #333333;
+            --text-light: #777777;
+            --border: #e0e0e0;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 70px;
+            --topbar-height: 60px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed;
+            left: 0; top: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            color: var(--white);
+            z-index: 1000;
+            transition: width 0.3s ease;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+        .sidebar-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            min-height: 60px;
+        }
+        .sidebar-header .logo-icon {
+            min-width: 38px; height: 38px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px;
+        }
+        .sidebar-header .logo-text {
+            font-size: 14px; font-weight: 600;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+        .sidebar.collapsed .logo-text { opacity: 0; pointer-events: none; }
+
+        .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 20px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-nav a:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+        .sidebar-nav a.active {
+            color: var(--white);
+            background: rgba(46,156,219,0.15);
+            border-left-color: var(--primary);
+        }
+        .sidebar-nav a i { min-width: 22px; text-align: center; font-size: 16px; }
+        .sidebar-nav .nav-label { transition: opacity 0.2s; }
+        .sidebar.collapsed .nav-label { opacity: 0; pointer-events: none; }
+        .sidebar-nav .nav-divider {
+            height: 1px; background: rgba(255,255,255,0.08);
+            margin: 8px 16px;
+        }
+        .sidebar-footer {
+            padding: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-footer a {
+            display: flex; align-items: center; gap: 14px;
+            padding: 10px 8px;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none; font-size: 14px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .sidebar-footer a:hover { color: #ff6b6b; background: rgba(255,107,107,0.1); }
+        .sidebar-footer a i { min-width: 22px; text-align: center; }
+        .sidebar.collapsed .sidebar-footer .nav-label { opacity: 0; }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+        .sidebar.collapsed ~ .main-content { margin-left: var(--sidebar-collapsed); }
+
+        /* ===== TOP BAR ===== */
+        .topbar {
+            height: var(--topbar-height);
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px;
+            position: sticky; top: 0;
+            z-index: 500;
+            box-shadow: var(--shadow);
+        }
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .topbar-toggle {
+            background: none; border: none; font-size: 20px;
+            color: var(--text); cursor: pointer; padding: 4px;
+        }
+        .topbar-right { display: flex; align-items: center; gap: 20px; }
+        .topbar-user {
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer;
+        }
+        .topbar-user .avatar {
+            width: 36px; height: 36px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 600; font-size: 14px;
+        }
+        .topbar-user .user-info { line-height: 1.3; }
+        .topbar-user .user-name { font-size: 13px; font-weight: 600; }
+        .topbar-user .user-role { font-size: 11px; color: var(--text-light); }
+
+        /* ===== PAGE CONTENT ===== */
+        .page-content { padding: 24px; }
+        .page-title {
+            font-size: 22px; font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        /* ===== CARDS ===== */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex; align-items: center; gap: 16px;
+        }
+        .kpi-card .kpi-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; color: white;
+        }
+        .kpi-card .kpi-icon.blue { background: var(--primary); }
+        .kpi-card .kpi-icon.orange { background: var(--secondary); }
+        .kpi-card .kpi-icon.green { background: var(--success); }
+        .kpi-card .kpi-icon.red { background: var(--danger); }
+        .kpi-card .kpi-value { font-size: 24px; font-weight: 700; }
+        .kpi-card .kpi-label { font-size: 12px; color: var(--text-light); }
+
+        .card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            font-weight: 600; font-size: 15px;
+        }
+        .card-body { padding: 20px; }
+
+        /* ===== TABLES ===== */
+        .table-container { overflow-x: auto; }
+        table {
+            width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        table th {
+            background: var(--bg);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        table tr:hover td { background: var(--primary-light); }
+
+        .badge-status {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-status.pendiente { background: #fff3cd; color: #856404; }
+        .badge-status.registrada { background: #d4edda; color: #155724; }
+        .badge-status.anulada { background: #f8d7da; color: #721c24; }
+        .badge-status.pagada { background: #cce5ff; color: #004085; }
+
+        /* ===== FORMS ===== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(46,156,219,0.1);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-secondary:hover { background: var(--secondary-dark); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #218838; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover { background: var(--bg); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-lg { padding: 12px 28px; font-size: 15px; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* ===== SECTIONS ===== */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* ===== SKU SEARCH ROW ===== */
+        .sku-search-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+        .sku-search-row .form-group { margin-bottom: 0; flex: 1; max-width: 300px; }
+
+        /* ===== NEW PRODUCT INLINE FORM ===== */
+        .new-product-form {
+            background: #fffbe6;
+            border: 1px solid var(--warning);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .new-product-form.visible { display: block; }
+        .new-product-form h4 {
+            font-size: 14px;
+            color: #856404;
+            margin-bottom: 12px;
+        }
+
+        /* ===== ITEMS TABLE ===== */
+        .items-table input {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 13px;
+            width: 100%;
+            outline: none;
+        }
+        .items-table input:focus { border-color: var(--primary); }
+        .items-table .qty-input { width: 80px; text-align: center; }
+        .items-table .price-input { width: 120px; text-align: right; }
+        .items-table .total-cell { font-weight: 600; text-align: right; white-space: nowrap; }
+        .items-table .remove-row {
+            background: none; border: none;
+            color: var(--danger); cursor: pointer;
+            font-size: 16px; padding: 4px;
+        }
+        .items-table .remove-row:hover { color: #a71d2a; }
+
+        /* ===== TOTALS SECTION ===== */
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+        .totals-table {
+            width: 300px;
+        }
+        .totals-table tr td {
+            padding: 8px 14px;
+            border: none;
+        }
+        .totals-table tr:hover td { background: transparent; }
+        .totals-table tr td:first-child { text-align: right; font-weight: 500; }
+        .totals-table tr td:last-child { text-align: right; font-weight: 700; font-size: 15px; }
+        .totals-table tr.total-row td {
+            border-top: 2px solid var(--text);
+            font-size: 18px;
+            color: var(--primary);
+        }
+
+        /* ===== ACTION BUTTONS BAR ===== */
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ===== FILTERS ===== */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .filter-bar .form-group { margin-bottom: 0; }
+        .filter-bar input,
+        .filter-bar select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--white);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .modal-header .close-btn {
+            background: none; border: none;
+            font-size: 22px; color: var(--text-light);
+            cursor: pointer;
+        }
+        .modal-body { padding: 24px; }
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* ===== TOAST ===== */
+        .toast-container {
+            position: fixed;
+            top: 80px; right: 24px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 14px 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid var(--primary);
+        }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--warning); }
+        .toast-message { font-size: 13px; flex: 1; }
+        .toast-close {
+            background: none; border: none;
+            color: var(--text-light); cursor: pointer; font-size: 16px;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ===== LOADING ===== */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px; height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+        .empty-state i { font-size: 48px; margin-bottom: 12px; display: block; opacity: 0.3; }
+
+        /* ===== PROVEEDOR SALDO ===== */
+        .saldo-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .saldo-badge.debe { background: #f8d7da; color: #721c24; }
+        .saldo-badge.aldia { background: #d4edda; color: #155724; }
+
+        /* ===== PRINT ===== */
+        @media print {
+            .sidebar, .topbar, .no-print { display: none !important; }
+            .main-content { margin-left: 0 !important; }
+            .page-content { padding: 0; }
+            .card { box-shadow: none; border: 1px solid #ddd; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 20px; }
+            .print-header h2 { font-size: 18px; }
+            .print-header p { font-size: 12px; color: #666; }
+        }
+        .print-header { display: none; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .sidebar { width: var(--sidebar-collapsed); }
+            .sidebar .nav-label, .sidebar .logo-text { opacity: 0; pointer-events: none; }
+            .main-content { margin-left: var(--sidebar-collapsed); }
+            .form-row { grid-template-columns: 1fr; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+            .filter-bar { flex-direction: column; }
+            .topbar-user .user-info { display: none; }
+        }
+        .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+        .login-box{background:#fff;border-radius:16px;padding:40px;width:380px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+        .login-logo{text-align:center;margin-bottom:24px;}
+    </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <div class="login-logo">
+            <div style="width:60px;height:60px;background:#2E9CDB;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:24px;margin:0 auto 12px">EC</div>
+            <h2 style="font-size:20px;margin-bottom:4px">Empresas Centrales SA</h2>
+            <p style="color:#777;font-size:13px">Compras — Iniciar Sesion</p>
+        </div>
+        <div class="login-form">
+            <div class="form-group" style="margin-bottom:12px">
+                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px">Email</label>
+                <input type="email" id="loginEmail" class="form-control" placeholder="correo@ecsa.com" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+            </div>
+            <div class="form-group" style="margin-bottom:16px">
+                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px">Contrasena</label>
+                <input type="password" id="loginPassword" class="form-control" placeholder="••••••" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px" onkeydown="if(event.key==='Enter')doLogin()">
+            </div>
+            <div id="loginError" style="color:#dc3545;font-size:13px;margin-bottom:10px;display:none"></div>
+            <button onclick="doLogin()" style="width:100%;padding:12px;background:#2E9CDB;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">Iniciar Sesion</button>
+        </div>
+    </div>
+</div>
+<div class="login-overlay" id="accessDenied" style="display:none">
+    <div class="login-box" style="text-align:center">
+        <i class="fas fa-shield-alt" style="font-size:48px;color:#dc3545;margin-bottom:16px"></i>
+        <h2 style="font-size:20px;margin-bottom:8px">Acceso Denegado</h2>
+        <p style="color:#777;font-size:14px;margin-bottom:16px">Se requiere rol <strong>Admin</strong> o <strong>Bodeguero</strong></p>
+        <button onclick="doLogoutFromDenied()" style="padding:10px 24px;background:#2E9CDB;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">Cerrar Sesion e Intentar con Otra Cuenta</button>
+    </div>
+</div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-icon">EC</div>
+        <div class="logo-text">ECSA Compras</div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="#registro" class="active" data-section="registro">
+            <i class="fas fa-file-invoice"></i>
+            <span class="nav-label">Registro Compras</span>
+        </a>
+        <a href="#proveedores" data-section="proveedores">
+            <i class="fas fa-truck"></i>
+            <span class="nav-label">Proveedores</span>
+        </a>
+        <a href="#historial" data-section="historial">
+            <i class="fas fa-history"></i>
+            <span class="nav-label">Historial Compras</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="admin.html">
+            <i class="fas fa-arrow-left"></i>
+            <span class="nav-label">Volver al Panel</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="#" id="btnLogout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="nav-label">Cerrar Sesion</span>
+        </a>
+    </div>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="main-content">
+    <!-- TOPBAR -->
+    <div class="topbar no-print">
+        <div class="topbar-left">
+            <button class="topbar-toggle" id="toggleSidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            <span style="font-size:15px;font-weight:600;">Gestion de Compras</span>
+        </div>
+        <div class="topbar-right">
+            <div class="topbar-user">
+                <div class="avatar" id="userAvatar">--</div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">Cargando...</div>
+                    <div class="user-role" id="userRole">---</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-content">
+
+        <!-- ============================================ -->
+        <!-- SECTION A: REGISTRO DE FACTURAS DE COMPRA    -->
+        <!-- ============================================ -->
+        <div class="section active" id="section-registro">
+            <h1 class="page-title"><i class="fas fa-file-invoice" style="color:var(--primary);margin-right:8px;"></i>Registro de Factura de Compra</h1>
+
+            <!-- KPIs -->
+            <div class="kpi-grid" id="kpiCompras">
+                <div class="kpi-card">
+                    <div class="kpi-icon blue"><i class="fas fa-shopping-cart"></i></div>
+                    <div>
+                        <div class="kpi-value" id="kpiTotalComprasMes">0</div>
+                        <div class="kpi-label">Compras este mes</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon orange"><i class="fas fa-dollar-sign"></i></div>
+                    <div>
+                        <div class="kpi-value" id="kpiMontoMes">$0.00</div>
+                        <div class="kpi-label">Monto total mes</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon green"><i class="fas fa-truck"></i></div>
+                    <div>
+                        <div class="kpi-value" id="kpiProveedoresActivos">0</div>
+                        <div class="kpi-label">Proveedores activos</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div>
+                        <div class="kpi-value" id="kpiPendientes">0</div>
+                        <div class="kpi-label">Facturas pendientes</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-plus-circle" style="color:var(--primary);margin-right:8px;"></i>Datos de la Factura</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Numero de Factura del Proveedor</label>
+                            <input type="text" id="numFactura" placeholder="Ej: FAC-00123">
+                        </div>
+                        <div class="form-group">
+                            <label>Seleccionar Proveedor</label>
+                            <select id="selProveedor">
+                                <option value="">-- Seleccione proveedor --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Factura</label>
+                            <input type="date" id="fechaFactura">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Recepcion</label>
+                            <input type="date" id="fechaRecepcion">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-boxes" style="color:var(--secondary);margin-right:8px;"></i>Productos</span>
+                </div>
+                <div class="card-body">
+                    <!-- SKU Search -->
+                    <div class="sku-search-row">
+                        <div class="form-group">
+                            <label>Buscar por SKU</label>
+                            <input type="text" id="skuSearch" placeholder="Ingrese SKU y presione Enter">
+                        </div>
+                        <button class="btn btn-primary btn-sm" id="btnSearchSku">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+
+                    <!-- New Product Inline Form -->
+                    <div class="new-product-form" id="newProductForm">
+                        <h4><i class="fas fa-exclamation-circle"></i> SKU no encontrado - Crear nuevo producto</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>SKU</label>
+                                <input type="text" id="newProdSku" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre del Producto</label>
+                                <input type="text" id="newProdNombre" placeholder="Nombre del producto">
+                            </div>
+                            <div class="form-group">
+                                <label>Departamento</label>
+                                <select id="newProdDepto">
+                                    <option value="">-- Seleccione --</option>
+                                    <option value="Ferreteria">Ferreteria</option>
+                                    <option value="Electricidad">Electricidad</option>
+                                    <option value="Plomeria">Plomeria</option>
+                                    <option value="Pintura">Pintura</option>
+                                    <option value="Herramientas">Herramientas</option>
+                                    <option value="Jardineria">Jardineria</option>
+                                    <option value="Construccion">Construccion</option>
+                                    <option value="Seguridad">Seguridad</option>
+                                    <option value="Iluminacion">Iluminacion</option>
+                                    <option value="Tornilleria">Tornilleria</option>
+                                    <option value="Otros">Otros</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Precio Costo</label>
+                                <input type="number" id="newProdCosto" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:10px;margin-top:8px;">
+                            <button class="btn btn-success btn-sm" id="btnAddNewProduct">
+                                <i class="fas fa-plus"></i> Agregar Producto a Linea
+                            </button>
+                            <button class="btn btn-outline btn-sm" id="btnCancelNewProduct">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Items Table -->
+                    <div class="table-container">
+                        <table class="items-table" id="itemsTable">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;">#</th>
+                                    <th style="width:120px;">SKU</th>
+                                    <th>Producto</th>
+                                    <th style="width:100px;">Cantidad</th>
+                                    <th style="width:140px;">Precio Costo Unit.</th>
+                                    <th style="width:140px;">Total Linea</th>
+                                    <th style="width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-top:12px;">
+                        <button class="btn btn-outline btn-sm" id="btnAddEmptyRow">
+                            <i class="fas fa-plus"></i> Agregar fila manual
+                        </button>
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="totals-section">
+                        <table class="totals-table">
+                            <tr>
+                                <td>Subtotal:</td>
+                                <td id="compraSubtotal">$0.00</td>
+                            </tr>
+                            <tr>
+                                <td>ITBMS (7%):</td>
+                                <td id="compraITBMS">$0.00</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td>TOTAL:</td>
+                                <td id="compraTotal">$0.00</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="action-bar no-print">
+                        <button class="btn btn-success btn-lg" id="btnRegistrarCompra">
+                            <i class="fas fa-save"></i> Registrar Compra
+                        </button>
+                        <button class="btn btn-primary" id="btnImprimirRecepcion">
+                            <i class="fas fa-print"></i> Imprimir Orden de Recepcion
+                        </button>
+                        <button class="btn btn-outline" id="btnLimpiarCompra">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;" class="no-print">
+                        <button class="btn btn-outline btn-sm" onclick="ImportarFactura.descargarPlantilla()">
+                            <i class="fas fa-download" style="color:#28a745;"></i> Descargar Plantilla Factura de Compra
+                        </button>
+                        <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0;">
+                            <i class="fas fa-file-import" style="color:var(--primary);"></i> Importar Factura Excel
+                            <input type="file" id="importarFacturaFile" accept=".xlsx,.xls" style="display:none;" onchange="ImportarFactura.preview(event)">
+                        </label>
+                        <button class="btn btn-outline btn-sm" onclick="ImportarFactura.exportarInventario()">
+                            <i class="fas fa-file-excel" style="color:#28a745;"></i> Exportar Inventario Completo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION B: GESTION DE PROVEEDORES            -->
+        <!-- ============================================ -->
+        <div class="section" id="section-proveedores">
+            <h1 class="page-title"><i class="fas fa-truck" style="color:var(--primary);margin-right:8px;"></i>Gestion de Proveedores</h1>
+
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-plus-circle" style="color:var(--primary);margin-right:8px;"></i>Nuevo Proveedor</span>
+                    <button class="btn btn-outline btn-sm" id="btnToggleProvForm">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="card-body" id="provFormContainer" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre / Razon Social</label>
+                            <input type="text" id="provNombre" placeholder="Nombre del proveedor">
+                        </div>
+                        <div class="form-group">
+                            <label>RUC</label>
+                            <input type="text" id="provRUC" placeholder="Ej: 12345-678-901234">
+                        </div>
+                        <div class="form-group">
+                            <label>Telefono</label>
+                            <input type="text" id="provTelefono" placeholder="Ej: 6000-0000">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="provEmail" placeholder="correo@proveedor.com">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Dias de Credito</label>
+                            <input type="number" id="provDiasCredito" placeholder="30" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Banco</label>
+                            <input type="text" id="provBanco" placeholder="Nombre del banco">
+                        </div>
+                        <div class="form-group">
+                            <label>Numero de Cuenta</label>
+                            <input type="text" id="provNumeroCuenta" placeholder="Numero de cuenta bancaria">
+                        </div>
+                    </div>
+                    <div style="margin-top:8px;">
+                        <button class="btn btn-success" id="btnGuardarProv">
+                            <i class="fas fa-save"></i> Guardar Proveedor
+                        </button>
+                        <button class="btn btn-outline" id="btnCancelProv" style="margin-left:8px;">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Lista de Proveedores</span>
+                    <div class="filter-bar" style="margin-bottom:0;">
+                        <input type="text" id="provSearchInput" placeholder="Buscar proveedor..." style="width:250px;">
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>RUC</th>
+                                    <th>Telefono</th>
+                                    <th>Email</th>
+                                    <th>Dias Credito</th>
+                                    <th>Saldo Pendiente</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="proveedoresBody">
+                                <tr>
+                                    <td colspan="7" class="empty-state">
+                                        <i class="fas fa-truck"></i>
+                                        Cargando proveedores...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SECTION C: HISTORIAL DE COMPRAS              -->
+        <!-- ============================================ -->
+        <div class="section" id="section-historial">
+            <h1 class="page-title"><i class="fas fa-history" style="color:var(--primary);margin-right:8px;"></i>Historial de Compras</h1>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Filtros</span>
+                </div>
+                <div class="card-body">
+                    <div class="filter-bar">
+                        <div class="form-group">
+                            <label>Fecha Desde</label>
+                            <input type="date" id="filtroDesde">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Hasta</label>
+                            <input type="date" id="filtroHasta">
+                        </div>
+                        <div class="form-group">
+                            <label>Proveedor</label>
+                            <select id="filtroProveedor" style="min-width:200px;">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-primary btn-sm" id="btnFiltrarHistorial">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Compras Registradas</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th># Factura</th>
+                                    <th>Proveedor</th>
+                                    <th>Subtotal</th>
+                                    <th>ITBMS</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historialBody">
+                                <tr>
+                                    <td colspan="8" class="empty-state">
+                                        <i class="fas fa-history"></i>
+                                        Cargando historial...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /page-content -->
+</div><!-- /main-content -->
+
+<!-- ===== PRINT HEADER (visible only in print) ===== -->
+<div class="print-header" id="printHeader">
+    <h2>Empresas Centrales SA</h2>
+    <p>Tel: 6090-9890 | Email: ventas@ecsa.com</p>
+    <p>Orden de Recepcion de Mercancia</p>
+    <hr style="margin:10px 0;">
+</div>
+
+<!-- ===== MODAL: Detalle Compra ===== -->
+<div class="modal-overlay" id="modalDetalle">
+    <div class="modal">
+        <div class="modal-header">
+            <span><i class="fas fa-file-invoice" style="color:var(--primary);margin-right:8px;"></i>Detalle de Compra</span>
+            <button class="close-btn" onclick="cerrarModal('modalDetalle')">&times;</button>
+        </div>
+        <div class="modal-body" id="modalDetalleBody">
+            <!-- Dynamic content -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="cerrarModal('modalDetalle')">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: Historial Proveedor ===== -->
+<div class="modal-overlay" id="modalProvHistorial">
+    <div class="modal" style="max-width:800px;">
+        <div class="modal-header">
+            <span><i class="fas fa-truck" style="color:var(--primary);margin-right:8px;"></i>Historial de Compras al Proveedor</span>
+            <button class="close-btn" onclick="cerrarModal('modalProvHistorial')">&times;</button>
+        </div>
+        <div class="modal-body" id="modalProvHistorialBody">
+            <!-- Dynamic content -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="cerrarModal('modalProvHistorial')">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ===== FIREBASE SDK ===== -->
+<!-- ===== MODAL: Importar Factura Preview ===== -->
+<div class="modal-overlay" id="modalImportFactura">
+    <div class="modal" style="max-width:950px;">
+        <div class="modal-header">
+            <span><i class="fas fa-file-import" style="color:var(--primary);margin-right:8px;"></i>Importar Factura desde Excel</span>
+            <button class="close-btn" onclick="cerrarModal('modalImportFactura')">&times;</button>
+        </div>
+        <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+            <!-- Encabezado factura -->
+            <div id="importFacturaHeader" style="margin-bottom:16px;"></div>
+
+            <!-- Tabla de productos -->
+            <h4 style="font-size:14px;margin-bottom:8px;">Productos</h4>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SKU</th><th>Nombre</th><th>Cant.</th><th>Costo</th>
+                            <th>Lista1</th><th>Lista2</th><th>Lista3</th><th>Lista4</th><th>Lista5</th>
+                            <th>Depto.</th><th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="importFacturaProductos"></tbody>
+                </table>
+            </div>
+
+            <div id="importFacturaResumen" style="margin:16px 0;font-size:13px;"></div>
+        </div>
+        <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-outline" onclick="cerrarModal('modalImportFactura')">Cancelar</button>
+            <button class="btn btn-success" id="btnConfirmarImportFactura" onclick="ImportarFactura.confirmar()">
+                <i class="fas fa-check"></i> Confirmar Importacion
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<script>
+(function() {
+    'use strict';
+
+    var ECSA = window.ECSA.Firebase;
+    var _proveedores = [];
+    var _compraItems = [];
+    var _editingProvId = null;
+    var _lastCompraId = null;
+
+    // =====================================================
+    // PRICE MARGINS CONFIG
+    // =====================================================
+    window._priceMargins = { lista1: 35, lista2: 32, lista3: 28, lista4: 22, lista5: 15 };
+
+    function calcularPrecios(costPrice) {
+        var margins = window._priceMargins || { lista1: 35, lista2: 32, lista3: 28, lista4: 22, lista5: 15 };
+        return {
+            costo: costPrice,
+            precioMostrador: +(costPrice * (1 + margins.lista1 / 100)).toFixed(2),
+            precioPlatinium: +(costPrice * (1 + margins.lista2 / 100)).toFixed(2),
+            precioGold: +(costPrice * (1 + margins.lista3 / 100)).toFixed(2),
+            precioPremium: +(costPrice * (1 + margins.lista4 / 100)).toFixed(2),
+            precioMayorista: +(costPrice * (1 + margins.lista5 / 100)).toFixed(2)
+        };
+    }
+
+    // Load margins from Firebase
+    ECSA.getDocument('configuracion', 'precios').then(function(doc) {
+        if (doc) {
+            window._priceMargins = doc;
+        }
+    }).catch(function() {
+        console.log('Usando margenes por defecto.');
+    });
+
+    // =====================================================
+    // AUTH & ROLE CHECK
+    // =====================================================
+    window.doLogin = function() {
+        var email = document.getElementById('loginEmail').value.trim();
+        var password = document.getElementById('loginPassword').value;
+        var errorEl = document.getElementById('loginError');
+        errorEl.style.display = 'none';
+        if (!email || !password) { errorEl.textContent = 'Complete email y contrasena'; errorEl.style.display = 'block'; return; }
+        ECSA.Auth.login(email, password).catch(function(err) {
+            errorEl.textContent = err.code === 'auth/user-not-found' ? 'Usuario no encontrado' : err.code === 'auth/wrong-password' ? 'Contrasena incorrecta' : 'Error: ' + err.message;
+            errorEl.style.display = 'block';
+        });
+    };
+
+    window.doLogoutFromDenied = function() {
+        ECSA.Auth.logout().then(function() {
+            document.getElementById('accessDenied').style.display = 'none';
+            document.getElementById('loginOverlay').style.display = 'flex';
+        });
+    };
+
+    ECSA.Auth.onAuthStateChanged(async function(user) {
+        if (!user) {
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('accessDenied').style.display = 'none';
+            return;
+        }
+        document.getElementById('loginOverlay').style.display = 'none';
+
+        // Check 'usuarios' collection first, fall back to 'clientes'
+        var perfil = await ECSA.getDocument('usuarios', user.uid);
+        if (!perfil) perfil = await ECSA.getDocument('clientes', user.uid);
+        var userRole = (perfil && (perfil.rol || perfil.tipo)) || '';
+
+        // Deny access if account is deactivated
+        if (perfil && perfil.activo === false) {
+            await ECSA.Auth.logout();
+            document.getElementById('loginOverlay').style.display = 'none';
+            var deniedEl = document.getElementById('accessDenied');
+            deniedEl.style.display = 'flex';
+            var msgEl = deniedEl.querySelector('.denied-message') || deniedEl.querySelector('p');
+            if (msgEl) msgEl.textContent = 'Tu cuenta esta desactivada';
+            return;
+        }
+
+        // Deny access if no profile or wrong role
+        if (!perfil || (userRole !== 'admin' && userRole !== 'bodeguero')) {
+            document.getElementById('accessDenied').style.display = 'flex';
+            return;
+        }
+
+        document.getElementById('accessDenied').style.display = 'none';
+        // Set user info in topbar
+        var nombre = perfil.nombre || perfil.name || user.email;
+        document.getElementById('userName').textContent = nombre;
+        document.getElementById('userRole').textContent = userRole.toUpperCase();
+        document.getElementById('userAvatar').textContent = nombre.substring(0, 2).toUpperCase();
+
+        // Initialize page
+        initPage();
+    });
+
+    // =====================================================
+    // INIT
+    // =====================================================
+    function initPage() {
+        setDefaultDates();
+        loadProveedores();
+        loadKPIs();
+        loadHistorial();
+    }
+
+    function setDefaultDates() {
+        var today = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaRecepcion').value = today;
+        document.getElementById('fechaFactura').value = today;
+
+        // Historial default: last 30 days
+        var d30 = new Date();
+        d30.setDate(d30.getDate() - 30);
+        document.getElementById('filtroDesde').value = d30.toISOString().split('T')[0];
+        document.getElementById('filtroHasta').value = today;
+    }
+
+    // =====================================================
+    // TOAST NOTIFICATIONS
+    // =====================================================
+    function showToast(message, type) {
+        type = type || 'success';
+        var container = document.getElementById('toastContainer');
+        var toast = document.createElement('div');
+        toast.className = 'toast ' + type;
+        toast.innerHTML = '<span class="toast-message">' + message + '</span>' +
+            '<button class="toast-close" onclick="this.parentElement.remove()">&times;</button>';
+        container.appendChild(toast);
+        setTimeout(function() {
+            if (toast.parentElement) toast.remove();
+        }, 4000);
+    }
+
+    // =====================================================
+    // SIDEBAR NAVIGATION
+    // =====================================================
+    document.getElementById('toggleSidebar').addEventListener('click', function() {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+    });
+
+    document.querySelectorAll('.sidebar-nav a[data-section]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            var section = this.getAttribute('data-section');
+            document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+            document.getElementById('section-' + section).classList.add('active');
+            document.querySelectorAll('.sidebar-nav a').forEach(function(a) { a.classList.remove('active'); });
+            this.classList.add('active');
+        });
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', function(e) {
+        e.preventDefault();
+        ECSA.Auth.logout();
+    });
+
+    // =====================================================
+    // LOAD PROVEEDORES
+    // =====================================================
+    function loadProveedores() {
+        ECSA.getDocuments('proveedores').then(function(docs) {
+            _proveedores = docs || [];
+            populateProveedorDropdowns();
+            renderProveedoresTable();
+        }).catch(function(err) {
+            console.error('Error loading proveedores:', err);
+        });
+    }
+
+    function populateProveedorDropdowns() {
+        var sel1 = document.getElementById('selProveedor');
+        var sel2 = document.getElementById('filtroProveedor');
+        var current1 = sel1.value;
+        var current2 = sel2.value;
+
+        // Clear options except first
+        sel1.innerHTML = '<option value="">-- Seleccione proveedor --</option>';
+        sel2.innerHTML = '<option value="">Todos</option>';
+
+        _proveedores.forEach(function(p) {
+            var opt1 = document.createElement('option');
+            opt1.value = p.id;
+            opt1.textContent = p.nombre;
+            sel1.appendChild(opt1);
+
+            var opt2 = document.createElement('option');
+            opt2.value = p.id;
+            opt2.textContent = p.nombre;
+            sel2.appendChild(opt2);
+        });
+
+        if (current1) sel1.value = current1;
+        if (current2) sel2.value = current2;
+    }
+
+    // =====================================================
+    // PROVEEDORES TABLE
+    // =====================================================
+    async function renderProveedoresTable(filter) {
+        var tbody = document.getElementById('proveedoresBody');
+        filter = (filter || '').toLowerCase();
+
+        var list = _proveedores.filter(function(p) {
+            if (!filter) return true;
+            return (p.nombre || '').toLowerCase().includes(filter) ||
+                   (p.ruc || '').toLowerCase().includes(filter) ||
+                   (p.email || '').toLowerCase().includes(filter);
+        });
+
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">' +
+                '<i class="fas fa-truck"></i>No se encontraron proveedores.</td></tr>';
+            return;
+        }
+
+        // Calculate pending balances
+        var saldos = {};
+        try {
+            var compras = await ECSA.getDocuments('compras');
+            (compras || []).forEach(function(c) {
+                if (c.estado !== 'anulada') {
+                    var pid = c.proveedorId;
+                    if (!saldos[pid]) saldos[pid] = 0;
+                    saldos[pid] += (c.total || 0);
+                    if (c.estado === 'pagada') {
+                        saldos[pid] -= (c.total || 0);
+                    }
+                }
+            });
+        } catch(e) { /* ignore */ }
+
+        var html = '';
+        list.forEach(function(p) {
+            var saldo = saldos[p.id] || 0;
+            var saldoClass = saldo > 0 ? 'debe' : 'aldia';
+            var saldoLabel = saldo > 0 ? '$' + saldo.toFixed(2) : 'Al dia';
+            html += '<tr>' +
+                '<td><strong>' + esc(p.nombre) + '</strong></td>' +
+                '<td>' + esc(p.ruc || '-') + '</td>' +
+                '<td>' + esc(p.telefono || '-') + '</td>' +
+                '<td>' + esc(p.email || '-') + '</td>' +
+                '<td>' + (p.diasCredito || 0) + ' dias</td>' +
+                '<td><span class="saldo-badge ' + saldoClass + '">' + saldoLabel + '</span></td>' +
+                '<td>' +
+                    '<button class="btn btn-outline btn-sm" onclick="verHistorialProv(\'' + p.id + '\',\'' + esc(p.nombre) + '\')" title="Ver historial">' +
+                        '<i class="fas fa-history"></i>' +
+                    '</button> ' +
+                    '<button class="btn btn-outline btn-sm" onclick="editarProv(\'' + p.id + '\')" title="Editar">' +
+                        '<i class="fas fa-edit"></i>' +
+                    '</button>' +
+                '</td></tr>';
+        });
+        tbody.innerHTML = html;
+    }
+
+    document.getElementById('provSearchInput').addEventListener('input', function() {
+        renderProveedoresTable(this.value);
+    });
+
+    // =====================================================
+    // PROVEEDOR FORM
+    // =====================================================
+    document.getElementById('btnToggleProvForm').addEventListener('click', function() {
+        var container = document.getElementById('provFormContainer');
+        var isVisible = container.style.display !== 'none';
+        container.style.display = isVisible ? 'none' : 'block';
+        this.querySelector('i').className = isVisible ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+    });
+
+    document.getElementById('btnCancelProv').addEventListener('click', function() {
+        clearProvForm();
+    });
+
+    document.getElementById('btnGuardarProv').addEventListener('click', function() {
+        var data = {
+            nombre: document.getElementById('provNombre').value.trim(),
+            ruc: document.getElementById('provRUC').value.trim(),
+            telefono: document.getElementById('provTelefono').value.trim(),
+            email: document.getElementById('provEmail').value.trim(),
+            diasCredito: parseInt(document.getElementById('provDiasCredito').value) || 0,
+            banco: document.getElementById('provBanco').value.trim(),
+            numeroCuenta: document.getElementById('provNumeroCuenta').value.trim(),
+            estado: 'activo'
+        };
+
+        if (!data.nombre) {
+            showToast('El nombre del proveedor es obligatorio.', 'error');
+            return;
+        }
+
+        if (_editingProvId) {
+            ECSA.updateDocument('proveedores', _editingProvId, data).then(function() {
+                showToast('Proveedor actualizado correctamente.', 'success');
+                clearProvForm();
+                loadProveedores();
+            }).catch(function(err) {
+                showToast('Error al actualizar: ' + err.message, 'error');
+            });
+        } else {
+            ECSA.addDocument('proveedores', data).then(function() {
+                showToast('Proveedor registrado correctamente.', 'success');
+                clearProvForm();
+                loadProveedores();
+            }).catch(function(err) {
+                showToast('Error al guardar: ' + err.message, 'error');
+            });
+        }
+    });
+
+    function clearProvForm() {
+        _editingProvId = null;
+        document.getElementById('provNombre').value = '';
+        document.getElementById('provRUC').value = '';
+        document.getElementById('provTelefono').value = '';
+        document.getElementById('provEmail').value = '';
+        document.getElementById('provDiasCredito').value = '';
+        document.getElementById('provBanco').value = '';
+        document.getElementById('provNumeroCuenta').value = '';
+        document.getElementById('provFormContainer').style.display = 'none';
+        document.querySelector('#btnToggleProvForm i').className = 'fas fa-chevron-down';
+    }
+
+    window.editarProv = function(id) {
+        var prov = _proveedores.find(function(p) { return p.id === id; });
+        if (!prov) return;
+        _editingProvId = id;
+        document.getElementById('provNombre').value = prov.nombre || '';
+        document.getElementById('provRUC').value = prov.ruc || '';
+        document.getElementById('provTelefono').value = prov.telefono || '';
+        document.getElementById('provEmail').value = prov.email || '';
+        document.getElementById('provDiasCredito').value = prov.diasCredito || '';
+        document.getElementById('provBanco').value = prov.banco || '';
+        document.getElementById('provNumeroCuenta').value = prov.numeroCuenta || '';
+        document.getElementById('provFormContainer').style.display = 'block';
+        document.querySelector('#btnToggleProvForm i').className = 'fas fa-chevron-up';
+        document.getElementById('provNombre').focus();
+    };
+
+    // =====================================================
+    // PROVEEDOR HISTORIAL MODAL
+    // =====================================================
+    window.verHistorialProv = function(provId, provNombre) {
+        var body = document.getElementById('modalProvHistorialBody');
+        body.innerHTML = '<div style="text-align:center;padding:20px;"><div class="loading-spinner"></div> Cargando...</div>';
+        document.getElementById('modalProvHistorial').classList.add('active');
+
+        ECSA.getDocuments('compras', { where: ['proveedorId', '==', provId] }).then(function(docs) {
+            if (!docs || docs.length === 0) {
+                body.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i>No hay compras registradas para este proveedor.</div>';
+                return;
+            }
+
+            docs.sort(function(a, b) {
+                var da = a.fechaFactura || '';
+                var db2 = b.fechaFactura || '';
+                return db2 > da ? 1 : -1;
+            });
+
+            var totalGeneral = 0;
+            var html = '<h3 style="margin-bottom:12px;">' + esc(provNombre) + '</h3>';
+            html += '<div class="table-container"><table><thead><tr>' +
+                '<th>Fecha</th><th># Factura</th><th>Total</th><th>Estado</th></tr></thead><tbody>';
+
+            docs.forEach(function(c) {
+                totalGeneral += (c.total || 0);
+                var estadoClass = c.estado || 'registrada';
+                html += '<tr>' +
+                    '<td>' + esc(c.fechaFactura || '-') + '</td>' +
+                    '<td>' + esc(c.numeroFactura || '-') + '</td>' +
+                    '<td style="text-align:right;font-weight:600;">$' + (c.total || 0).toFixed(2) + '</td>' +
+                    '<td><span class="badge-status ' + estadoClass + '">' + estadoClass + '</span></td>' +
+                    '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            html += '<div style="text-align:right;margin-top:16px;font-size:16px;font-weight:700;color:var(--primary);">Total historico: $' + totalGeneral.toFixed(2) + '</div>';
+            body.innerHTML = html;
+        }).catch(function() {
+            body.innerHTML = '<div class="empty-state">Error al cargar historial.</div>';
+        });
+    };
+
+    window.cerrarModal = function(id) {
+        document.getElementById(id).classList.remove('active');
+    };
+
+    // Close modals on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) overlay.classList.remove('active');
+        });
+    });
+
+    // =====================================================
+    // SKU SEARCH & PRODUCT LINES
+    // =====================================================
+    function searchSku() {
+        var sku = document.getElementById('skuSearch').value.trim().toUpperCase();
+        if (!sku) {
+            showToast('Ingrese un SKU para buscar.', 'warning');
+            return;
+        }
+
+        ECSA.getDocuments('productos', { where: ['sku', '==', sku], limit: 1 }).then(function(docs) {
+            if (docs && docs.length > 0) {
+                var prod = docs[0];
+                addItemRow({
+                    productoId: prod.id,
+                    sku: prod.sku,
+                    nombre: prod.nombre || prod.name,
+                    cantidad: 1,
+                    precioCosto: prod.costo || 0,
+                    isNew: false
+                });
+                document.getElementById('skuSearch').value = '';
+                document.getElementById('newProductForm').classList.remove('visible');
+                showToast('Producto encontrado: ' + (prod.nombre || prod.name), 'success');
+            } else {
+                // SKU not found - show new product form
+                document.getElementById('newProductForm').classList.add('visible');
+                document.getElementById('newProdSku').value = sku;
+                document.getElementById('newProdNombre').value = '';
+                document.getElementById('newProdDepto').value = '';
+                document.getElementById('newProdCosto').value = '';
+                document.getElementById('newProdNombre').focus();
+                showToast('SKU no encontrado. Complete los datos para crear el producto.', 'warning');
+            }
+        }).catch(function(err) {
+            showToast('Error al buscar producto: ' + err.message, 'error');
+        });
+    }
+
+    document.getElementById('btnSearchSku').addEventListener('click', searchSku);
+    document.getElementById('skuSearch').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchSku();
+        }
+    });
+
+    // Add new product from inline form
+    document.getElementById('btnAddNewProduct').addEventListener('click', function() {
+        var sku = document.getElementById('newProdSku').value.trim();
+        var nombre = document.getElementById('newProdNombre').value.trim();
+        var depto = document.getElementById('newProdDepto').value;
+        var costo = parseFloat(document.getElementById('newProdCosto').value) || 0;
+
+        if (!nombre) {
+            showToast('Ingrese el nombre del producto.', 'error');
+            return;
+        }
+        if (!depto) {
+            showToast('Seleccione un departamento.', 'error');
+            return;
+        }
+        if (costo <= 0) {
+            showToast('Ingrese un precio de costo valido.', 'error');
+            return;
+        }
+
+        addItemRow({
+            productoId: null,
+            sku: sku,
+            nombre: nombre,
+            departamento: depto,
+            cantidad: 1,
+            precioCosto: costo,
+            isNew: true
+        });
+
+        document.getElementById('newProductForm').classList.remove('visible');
+        document.getElementById('skuSearch').value = '';
+        showToast('Producto nuevo agregado a la factura.', 'success');
+    });
+
+    document.getElementById('btnCancelNewProduct').addEventListener('click', function() {
+        document.getElementById('newProductForm').classList.remove('visible');
+    });
+
+    // =====================================================
+    // ITEMS TABLE MANAGEMENT
+    // =====================================================
+    var _itemCounter = 0;
+
+    function addItemRow(item) {
+        _itemCounter++;
+        var idx = _itemCounter;
+        item._idx = idx;
+        _compraItems.push(item);
+
+        var tbody = document.getElementById('itemsBody');
+        var tr = document.createElement('tr');
+        tr.id = 'item-row-' + idx;
+        tr.setAttribute('data-idx', idx);
+
+        var total = (item.cantidad * item.precioCosto).toFixed(2);
+
+        tr.innerHTML =
+            '<td>' + _compraItems.length + '</td>' +
+            '<td><strong>' + esc(item.sku) + '</strong>' +
+                (item.isNew ? ' <span style="color:var(--warning);font-size:11px;"><i class="fas fa-star"></i> Nuevo</span>' : '') +
+            '</td>' +
+            '<td>' + esc(item.nombre) + '</td>' +
+            '<td><input type="number" class="qty-input" value="' + item.cantidad + '" min="1" step="1" data-idx="' + idx + '" onchange="updateItemQty(this)"></td>' +
+            '<td><input type="number" class="price-input" value="' + item.precioCosto.toFixed(2) + '" min="0" step="0.01" data-idx="' + idx + '" onchange="updateItemPrice(this)"></td>' +
+            '<td class="total-cell" id="line-total-' + idx + '">$' + total + '</td>' +
+            '<td><button class="remove-row" onclick="removeItemRow(' + idx + ')" title="Eliminar linea"><i class="fas fa-trash-alt"></i></button></td>';
+
+        tbody.appendChild(tr);
+        recalcTotals();
+    }
+
+    window.updateItemQty = function(input) {
+        var idx = parseInt(input.getAttribute('data-idx'));
+        var item = _compraItems.find(function(i) { return i._idx === idx; });
+        if (item) {
+            item.cantidad = parseInt(input.value) || 1;
+            var total = (item.cantidad * item.precioCosto).toFixed(2);
+            document.getElementById('line-total-' + idx).textContent = '$' + total;
+            recalcTotals();
+        }
+    };
+
+    window.updateItemPrice = function(input) {
+        var idx = parseInt(input.getAttribute('data-idx'));
+        var item = _compraItems.find(function(i) { return i._idx === idx; });
+        if (item) {
+            item.precioCosto = parseFloat(input.value) || 0;
+            var total = (item.cantidad * item.precioCosto).toFixed(2);
+            document.getElementById('line-total-' + idx).textContent = '$' + total;
+            recalcTotals();
+        }
+    };
+
+    window.removeItemRow = function(idx) {
+        var row = document.getElementById('item-row-' + idx);
+        if (row) row.remove();
+        _compraItems = _compraItems.filter(function(i) { return i._idx !== idx; });
+        // Renumber
+        var rows = document.querySelectorAll('#itemsBody tr');
+        rows.forEach(function(r, i) { r.querySelector('td').textContent = i + 1; });
+        recalcTotals();
+    };
+
+    document.getElementById('btnAddEmptyRow').addEventListener('click', function() {
+        addItemRow({
+            productoId: null,
+            sku: '',
+            nombre: 'Producto manual',
+            cantidad: 1,
+            precioCosto: 0,
+            isNew: true
+        });
+    });
+
+    function recalcTotals() {
+        var subtotal = 0;
+        _compraItems.forEach(function(item) {
+            subtotal += item.cantidad * item.precioCosto;
+        });
+        var itbms = subtotal * 0.07;
+        var total = subtotal + itbms;
+
+        document.getElementById('compraSubtotal').textContent = '$' + subtotal.toFixed(2);
+        document.getElementById('compraITBMS').textContent = '$' + itbms.toFixed(2);
+        document.getElementById('compraTotal').textContent = '$' + total.toFixed(2);
+    }
+
+    // =====================================================
+    // REGISTRAR COMPRA
+    // =====================================================
+    document.getElementById('btnRegistrarCompra').addEventListener('click', async function() {
+        var numFactura = document.getElementById('numFactura').value.trim();
+        var proveedorId = document.getElementById('selProveedor').value;
+        var fechaFactura = document.getElementById('fechaFactura').value;
+        var fechaRecepcion = document.getElementById('fechaRecepcion').value;
+
+        // Validation
+        if (!numFactura) { showToast('Ingrese el numero de factura.', 'error'); return; }
+        if (!proveedorId) { showToast('Seleccione un proveedor.', 'error'); return; }
+        if (!fechaFactura) { showToast('Ingrese la fecha de factura.', 'error'); return; }
+        if (!fechaRecepcion) { showToast('Ingrese la fecha de recepcion.', 'error'); return; }
+        if (_compraItems.length === 0) { showToast('Agregue al menos un producto.', 'error'); return; }
+
+        var btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loading-spinner"></div> Registrando...';
+
+        try {
+            var provNombre = '';
+            var prov = _proveedores.find(function(p) { return p.id === proveedorId; });
+            if (prov) provNombre = prov.nombre;
+
+            var subtotal = 0;
+            var lineas = [];
+
+            // Process each item
+            for (var i = 0; i < _compraItems.length; i++) {
+                var item = _compraItems[i];
+                var lineTotal = item.cantidad * item.precioCosto;
+                subtotal += lineTotal;
+
+                if (item.isNew && !item.productoId) {
+                    // Create new product in Firebase
+                    var precios = calcularPrecios(item.precioCosto);
+                    var newProd = {
+                        sku: item.sku,
+                        nombre: item.nombre,
+                        departamento: item.departamento || 'Otros',
+                        costo: item.precioCosto,
+                        precioMostrador: precios.precioMostrador,
+                        precioPlatinium: precios.precioPlatinium,
+                        precioGold: precios.precioGold,
+                        precioPremium: precios.precioPremium,
+                        precioMayorista: precios.precioMayorista,
+                        stock: item.cantidad,
+                        minStock: 5,
+                        stockBajo: item.cantidad <= 5,
+                        estado: 'activo',
+                        unidad: 'und'
+                    };
+                    var newId = await ECSA.addDocument('productos', newProd);
+                    item.productoId = newId;
+                } else if (item.productoId) {
+                    // Update existing product stock and cost
+                    var existingProd = await ECSA.getDocument('productos', item.productoId);
+                    if (existingProd) {
+                        var newStock = (existingProd.stock || 0) + item.cantidad;
+                        var precios2 = calcularPrecios(item.precioCosto);
+                        await ECSA.updateDocument('productos', item.productoId, {
+                            stock: newStock,
+                            stockBajo: newStock <= (existingProd.minStock || 5),
+                            costo: item.precioCosto,
+                            precioMostrador: precios2.precioMostrador,
+                            precioPlatinium: precios2.precioPlatinium,
+                            precioGold: precios2.precioGold,
+                            precioPremium: precios2.precioPremium,
+                            precioMayorista: precios2.precioMayorista
+                        });
+                    }
+                }
+
+                lineas.push({
+                    productoId: item.productoId,
+                    sku: item.sku,
+                    nombre: item.nombre,
+                    cantidad: item.cantidad,
+                    precioCosto: item.precioCosto,
+                    totalLinea: +lineTotal.toFixed(2)
+                });
+            }
+
+            var itbms = +(subtotal * 0.07).toFixed(2);
+            var total = +(subtotal + itbms).toFixed(2);
+
+            // Save compra document
+            var compraData = {
+                numeroFactura: numFactura,
+                proveedorId: proveedorId,
+                proveedorNombre: provNombre,
+                fechaFactura: fechaFactura,
+                fechaRecepcion: fechaRecepcion,
+                lineas: lineas,
+                subtotal: +subtotal.toFixed(2),
+                itbms: itbms,
+                total: total,
+                estado: 'registrada',
+                registradoPor: ECSA.Auth.getCurrentUser() ? ECSA.Auth.getCurrentUser().uid : 'sistema'
+            };
+
+            _lastCompraId = await ECSA.addDocument('compras', compraData);
+
+            // Generate accounting entry (asiento contable)
+            var asiento = {
+                fecha: fechaRecepcion,
+                tipo: 'compra',
+                referencia: 'Compra FAC: ' + numFactura,
+                compraId: _lastCompraId,
+                lineas: [
+                    {
+                        cuenta: '1300',
+                        cuentaNombre: 'Inventario de Mercancias',
+                        debe: +subtotal.toFixed(2),
+                        haber: 0
+                    },
+                    {
+                        cuenta: '1400',
+                        cuentaNombre: 'ITBMS Credito Fiscal',
+                        debe: itbms,
+                        haber: 0
+                    },
+                    {
+                        cuenta: '2100',
+                        cuentaNombre: 'Cuentas por Pagar Proveedores',
+                        debe: 0,
+                        haber: total
+                    }
+                ],
+                totalDebe: +(subtotal + itbms).toFixed(2),
+                totalHaber: total,
+                estado: 'registrado'
+            };
+
+            await ECSA.addDocument('asientos', asiento);
+
+            showToast('Compra registrada exitosamente. Factura: ' + numFactura, 'success');
+            loadKPIs();
+            loadHistorial();
+
+        } catch (err) {
+            showToast('Error al registrar compra: ' + err.message, 'error');
+            console.error(err);
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Registrar Compra';
+    });
+
+    // =====================================================
+    // LIMPIAR FORMULARIO
+    // =====================================================
+    document.getElementById('btnLimpiarCompra').addEventListener('click', function() {
+        document.getElementById('numFactura').value = '';
+        document.getElementById('selProveedor').value = '';
+        setDefaultDates();
+        document.getElementById('itemsBody').innerHTML = '';
+        _compraItems = [];
+        _itemCounter = 0;
+        _lastCompraId = null;
+        recalcTotals();
+        document.getElementById('newProductForm').classList.remove('visible');
+    });
+
+    // =====================================================
+    // IMPRIMIR ORDEN DE RECEPCION
+    // =====================================================
+    document.getElementById('btnImprimirRecepcion').addEventListener('click', function() {
+        window.print();
+    });
+
+    // =====================================================
+    // LOAD KPIs
+    // =====================================================
+    async function loadKPIs() {
+        try {
+            // Get current month range
+            var now = new Date();
+            var firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+            var compras = await ECSA.getDocuments('compras');
+            var comprasMes = (compras || []).filter(function(c) {
+                return c.fechaFactura >= firstDay && c.fechaFactura <= lastDay && c.estado !== 'anulada';
+            });
+
+            var montoMes = 0;
+            comprasMes.forEach(function(c) { montoMes += (c.total || 0); });
+
+            var pendientes = (compras || []).filter(function(c) {
+                return c.estado === 'registrada';
+            });
+
+            document.getElementById('kpiTotalComprasMes').textContent = comprasMes.length;
+            document.getElementById('kpiMontoMes').textContent = '$' + montoMes.toFixed(2);
+            document.getElementById('kpiProveedoresActivos').textContent = _proveedores.length;
+            document.getElementById('kpiPendientes').textContent = pendientes.length;
+        } catch (err) {
+            console.error('Error loading KPIs:', err);
+        }
+    }
+
+    // =====================================================
+    // HISTORIAL DE COMPRAS
+    // =====================================================
+    async function loadHistorial() {
+        var tbody = document.getElementById('historialBody');
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;"><div class="loading-spinner"></div> Cargando...</td></tr>';
+
+        try {
+            var compras = await ECSA.getDocuments('compras');
+            compras = compras || [];
+
+            // Sort by date descending
+            compras.sort(function(a, b) {
+                var da = a.fechaFactura || '';
+                var db2 = b.fechaFactura || '';
+                return db2 > da ? 1 : -1;
+            });
+
+            renderHistorial(compras);
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-exclamation-circle"></i>Error al cargar historial.</td></tr>';
+        }
+    }
+
+    function renderHistorial(compras) {
+        var tbody = document.getElementById('historialBody');
+
+        // Apply filters
+        var desde = document.getElementById('filtroDesde').value;
+        var hasta = document.getElementById('filtroHasta').value;
+        var provId = document.getElementById('filtroProveedor').value;
+
+        var filtered = compras.filter(function(c) {
+            if (desde && c.fechaFactura < desde) return false;
+            if (hasta && c.fechaFactura > hasta) return false;
+            if (provId && c.proveedorId !== provId) return false;
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">' +
+                '<i class="fas fa-inbox"></i>No se encontraron compras en el rango seleccionado.</td></tr>';
+            return;
+        }
+
+        var html = '';
+        filtered.forEach(function(c) {
+            var estadoClass = c.estado || 'registrada';
+            html += '<tr>' +
+                '<td>' + esc(c.fechaFactura || '-') + '</td>' +
+                '<td><strong>' + esc(c.numeroFactura || '-') + '</strong></td>' +
+                '<td>' + esc(c.proveedorNombre || '-') + '</td>' +
+                '<td style="text-align:right;">$' + (c.subtotal || 0).toFixed(2) + '</td>' +
+                '<td style="text-align:right;">$' + (c.itbms || 0).toFixed(2) + '</td>' +
+                '<td style="text-align:right;font-weight:700;">$' + (c.total || 0).toFixed(2) + '</td>' +
+                '<td><span class="badge-status ' + estadoClass + '">' + estadoClass + '</span></td>' +
+                '<td>' +
+                    '<button class="btn btn-outline btn-sm" onclick="verDetalleCompra(\'' + c.id + '\')" title="Ver detalle">' +
+                        '<i class="fas fa-eye"></i>' +
+                    '</button>' +
+                '</td></tr>';
+        });
+        tbody.innerHTML = html;
+    }
+
+    document.getElementById('btnFiltrarHistorial').addEventListener('click', function() {
+        loadHistorial();
+    });
+
+    // =====================================================
+    // DETALLE COMPRA MODAL
+    // =====================================================
+    window.verDetalleCompra = function(compraId) {
+        var body = document.getElementById('modalDetalleBody');
+        body.innerHTML = '<div style="text-align:center;padding:20px;"><div class="loading-spinner"></div> Cargando...</div>';
+        document.getElementById('modalDetalle').classList.add('active');
+
+        ECSA.getDocument('compras', compraId).then(function(compra) {
+            if (!compra) {
+                body.innerHTML = '<div class="empty-state">Compra no encontrada.</div>';
+                return;
+            }
+
+            var html = '<div style="margin-bottom:16px;">' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+                    '<div><strong>Factura:</strong> ' + esc(compra.numeroFactura) + '</div>' +
+                    '<div><strong>Proveedor:</strong> ' + esc(compra.proveedorNombre) + '</div>' +
+                    '<div><strong>Fecha Factura:</strong> ' + esc(compra.fechaFactura) + '</div>' +
+                    '<div><strong>Fecha Recepcion:</strong> ' + esc(compra.fechaRecepcion) + '</div>' +
+                    '<div><strong>Estado:</strong> <span class="badge-status ' + (compra.estado || 'registrada') + '">' + (compra.estado || 'registrada') + '</span></div>' +
+                '</div></div>';
+
+            html += '<div class="table-container"><table><thead><tr>' +
+                '<th>SKU</th><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Total</th>' +
+                '</tr></thead><tbody>';
+
+            (compra.lineas || []).forEach(function(l) {
+                html += '<tr>' +
+                    '<td>' + esc(l.sku) + '</td>' +
+                    '<td>' + esc(l.nombre) + '</td>' +
+                    '<td style="text-align:center;">' + l.cantidad + '</td>' +
+                    '<td style="text-align:right;">$' + (l.precioCosto || 0).toFixed(2) + '</td>' +
+                    '<td style="text-align:right;font-weight:600;">$' + (l.totalLinea || 0).toFixed(2) + '</td>' +
+                    '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+
+            html += '<div style="text-align:right;margin-top:16px;">' +
+                '<div style="font-size:13px;">Subtotal: <strong>$' + (compra.subtotal || 0).toFixed(2) + '</strong></div>' +
+                '<div style="font-size:13px;">ITBMS (7%): <strong>$' + (compra.itbms || 0).toFixed(2) + '</strong></div>' +
+                '<div style="font-size:18px;font-weight:700;color:var(--primary);margin-top:4px;">Total: $' + (compra.total || 0).toFixed(2) + '</div>' +
+                '</div>';
+
+            body.innerHTML = html;
+        }).catch(function() {
+            body.innerHTML = '<div class="empty-state">Error al cargar detalle.</div>';
+        });
+    };
+
+    // =====================================================
+    // UTILITY: escape HTML
+    // =====================================================
+    function esc(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // =====================================================
+    // IMPORTAR FACTURA DESDE EXCEL (Mejora 5)
+    // =====================================================
+    var _importFacturaData = null;
+    var _importFacturaHeader = null;
+    var _ecsaCounter = 0;
+
+    // Get next ECSA code
+    async function getNextECSACode() {
+        try {
+            var prods = await ECSA.getDocuments('productos');
+            var maxNum = 0;
+            (prods || []).forEach(function(p) {
+                var sku = p.sku || '';
+                if (sku.indexOf('ECSA-') === 0) {
+                    var num = parseInt(sku.replace('ECSA-', ''));
+                    if (num > maxNum) maxNum = num;
+                }
+            });
+            _ecsaCounter = maxNum;
+        } catch(e) { _ecsaCounter = 1000; }
+    }
+
+    function generateECSACode() {
+        _ecsaCounter++;
+        return 'ECSA-' + String(_ecsaCounter).padStart(5, '0');
+    }
+
+    window.ImportarFactura = {
+        descargarPlantilla() {
+            if (typeof XLSX === 'undefined') { showToast('SheetJS no cargado', 'error'); return; }
+            var wb = XLSX.utils.book_new();
+
+            // Hoja 1: Factura
+            var h1 = [
+                ['Campo', 'Valor'],
+                ['Proveedor', ''],
+                ['Numero Factura', ''],
+                ['Fecha Factura', ''],
+                ['Fecha Recepcion', ''],
+                ['Notas', '']
+            ];
+            var ws1 = XLSX.utils.aoa_to_sheet(h1);
+            ws1['!cols'] = [{wch:18},{wch:30}];
+            XLSX.utils.book_append_sheet(wb, ws1, 'Factura');
+
+            // Hoja 2: Productos
+            var h2 = [
+                ['SKU', 'Nombre', 'Cantidad', 'Precio Costo', 'Lista1', 'Lista2', 'Lista3', 'Lista4', 'Lista5', 'Departamento'],
+                ['ABC-001', 'Tornillo 3/4', 100, 0.15, '', '', '', '', '', 'Tornilleria'],
+                ['', 'Producto nuevo sin SKU', 50, 2.50, '', '', '', '', '', 'Ferreteria']
+            ];
+            var ws2 = XLSX.utils.aoa_to_sheet(h2);
+            ws2['!cols'] = [{wch:14},{wch:28},{wch:10},{wch:14},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:14}];
+            XLSX.utils.book_append_sheet(wb, ws2, 'Productos');
+
+            // Hoja 3: Instrucciones
+            var h3 = [
+                ['INSTRUCCIONES PARA LLENAR LA PLANTILLA'],
+                [''],
+                ['HOJA "Factura":'],
+                ['- Llene los datos del encabezado de la factura en la columna "Valor"'],
+                ['- Proveedor: nombre del proveedor (debe existir en el sistema)'],
+                ['- Fechas en formato YYYY-MM-DD (ej: 2026-01-15)'],
+                [''],
+                ['HOJA "Productos":'],
+                ['- SKU: codigo del producto. Si esta vacio, el sistema genera codigo ECSA-XXXXX automatico'],
+                ['- Si el SKU existe en el sistema: se actualiza stock y precios'],
+                ['- Si el SKU no existe: se crea producto nuevo con todos los datos'],
+                ['- Nombre: nombre del producto (obligatorio)'],
+                ['- Cantidad: unidades recibidas (obligatorio, mayor a 0)'],
+                ['- Precio Costo: costo unitario (obligatorio)'],
+                ['- Lista1-5: precios de venta. Si se dejan vacios, se calculan automaticamente segun margenes'],
+                ['- Departamento: Ferreteria, Electricidad, Plomeria, Pintura, Herramientas, Jardineria, etc.'],
+                [''],
+                ['NOTAS:'],
+                ['- ITBMS (7%) se calcula automaticamente'],
+                ['- Las 5 listas de precios se calculan segun margenes configurados si no se especifican'],
+                ['- Los productos nuevos se crean con stock minimo de 5 unidades por defecto']
+            ];
+            var ws3 = XLSX.utils.aoa_to_sheet(h3);
+            ws3['!cols'] = [{wch:80}];
+            XLSX.utils.book_append_sheet(wb, ws3, 'Instrucciones');
+
+            XLSX.writeFile(wb, 'plantilla_factura_compra_ecsa.xlsx');
+            showToast('Plantilla descargada', 'success');
+        },
+
+        async preview(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+
+            await getNextECSACode();
+
+            var reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    var wb = XLSX.read(e.target.result, { type: 'array' });
+
+                    // Read Factura sheet
+                    var wsFactura = wb.Sheets['Factura'] || wb.Sheets[wb.SheetNames[0]];
+                    var facturaData = XLSX.utils.sheet_to_json(wsFactura, { header: 1 });
+                    _importFacturaHeader = {};
+                    facturaData.forEach(function(row) {
+                        if (row.length >= 2) {
+                            var key = String(row[0] || '').trim().toLowerCase();
+                            if (key === 'proveedor') _importFacturaHeader.proveedor = String(row[1] || '');
+                            if (key === 'numero factura') _importFacturaHeader.numero = String(row[1] || '');
+                            if (key === 'fecha factura') _importFacturaHeader.fechaFactura = String(row[1] || '').substring(0, 10);
+                            if (key === 'fecha recepcion') _importFacturaHeader.fechaRecepcion = String(row[1] || '').substring(0, 10);
+                        }
+                    });
+
+                    // Read Productos sheet
+                    var wsProductos = wb.Sheets['Productos'] || wb.Sheets[wb.SheetNames[1]] || wb.Sheets[wb.SheetNames[0]];
+                    var productos = XLSX.utils.sheet_to_json(wsProductos, { defval: '' });
+                    if (productos.length === 0) { showToast('No se encontraron productos', 'error'); return; }
+
+                    // Check existing SKUs
+                    var existingProds = await ECSA.getDocuments('productos') || [];
+                    var existingMap = {};
+                    existingProds.forEach(function(p) {
+                        if (p.sku) existingMap[p.sku.toUpperCase()] = p;
+                    });
+
+                    var tempCounter = _ecsaCounter;
+                    _importFacturaData = productos.map(function(row) {
+                        var sku = String(row['SKU'] || row['sku'] || '').trim().toUpperCase();
+                        var nombre = row['Nombre'] || row['nombre'] || '';
+                        var cantidad = parseInt(row['Cantidad'] || row['cantidad']) || 0;
+                        var costo = parseFloat(row['Precio Costo'] || row['precioCosto'] || row['costo']) || 0;
+                        var depto = row['Departamento'] || row['departamento'] || 'Otros';
+                        var lista1 = parseFloat(row['Lista1'] || row['lista1']) || 0;
+                        var lista2 = parseFloat(row['Lista2'] || row['lista2']) || 0;
+                        var lista3 = parseFloat(row['Lista3'] || row['lista3']) || 0;
+                        var lista4 = parseFloat(row['Lista4'] || row['lista4']) || 0;
+                        var lista5 = parseFloat(row['Lista5'] || row['lista5']) || 0;
+
+                        var status = 'error'; // red
+                        var existing = null;
+                        var autoSku = false;
+
+                        if (!sku) {
+                            tempCounter++;
+                            sku = 'ECSA-' + String(tempCounter).padStart(5, '0');
+                            autoSku = true;
+                        }
+
+                        if (existingMap[sku]) {
+                            existing = existingMap[sku];
+                            status = 'exists'; // green
+                        } else if (!autoSku) {
+                            status = 'new'; // blue
+                        } else {
+                            status = 'new'; // blue (auto generated)
+                        }
+
+                        if (!nombre || cantidad <= 0 || costo <= 0) {
+                            if (!nombre && !cantidad && !costo) status = 'error';
+                            else if (!nombre || costo <= 0) status = 'warning';
+                        }
+
+                        return {
+                            sku: sku, nombre: nombre, cantidad: cantidad, costo: costo,
+                            departamento: depto, autoSku: autoSku,
+                            lista1: lista1, lista2: lista2, lista3: lista3, lista4: lista4, lista5: lista5,
+                            status: status, existing: existing,
+                            productoId: existing ? existing.id : null
+                        };
+                    });
+
+                    // Render header
+                    var headerHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f8f9fa;padding:12px;border-radius:8px;">' +
+                        '<div><strong>Proveedor:</strong> ' + esc(_importFacturaHeader.proveedor || 'No especificado') + '</div>' +
+                        '<div><strong>N. Factura:</strong> ' + esc(_importFacturaHeader.numero || 'N/A') + '</div>' +
+                        '<div><strong>Fecha Factura:</strong> ' + esc(_importFacturaHeader.fechaFactura || 'N/A') + '</div>' +
+                        '<div><strong>Fecha Recepcion:</strong> ' + esc(_importFacturaHeader.fechaRecepcion || 'N/A') + '</div>' +
+                        '</div>';
+                    document.getElementById('importFacturaHeader').innerHTML = headerHtml;
+
+                    // Render products
+                    var tbody = document.getElementById('importFacturaProductos');
+                    var nuevos = 0, actualizados = 0, errores = 0, advertencias = 0;
+                    tbody.innerHTML = _importFacturaData.map(function(p) {
+                        var bgColor = '#ffffff';
+                        var statusBadge = '';
+                        if (p.status === 'exists') { bgColor = '#e8f5e9'; statusBadge = '<span style="color:#2e7d32;font-weight:600;">Actualizar</span>'; actualizados++; }
+                        else if (p.status === 'new') { bgColor = '#e3f2fd'; statusBadge = '<span style="color:#1565c0;font-weight:600;">Nuevo</span>'; nuevos++; }
+                        else if (p.status === 'warning') { bgColor = '#fff8e1'; statusBadge = '<span style="color:#f57f17;font-weight:600;">Advertencia</span>'; advertencias++; }
+                        else { bgColor = '#ffebee'; statusBadge = '<span style="color:#c62828;font-weight:600;">Error</span>'; errores++; }
+
+                        var precios = calcularPrecios(p.costo);
+                        return '<tr style="background:' + bgColor + ';">' +
+                            '<td><strong>' + esc(p.sku) + '</strong>' + (p.autoSku ? ' <span style="font-size:10px;color:var(--info);">AUTO</span>' : '') + '</td>' +
+                            '<td>' + esc(p.nombre) + '</td>' +
+                            '<td>' + p.cantidad + '</td>' +
+                            '<td>$' + p.costo.toFixed(2) + '</td>' +
+                            '<td>$' + (p.lista1 || precios.precioMostrador).toFixed(2) + '</td>' +
+                            '<td>$' + (p.lista2 || precios.precioPlatinium).toFixed(2) + '</td>' +
+                            '<td>$' + (p.lista3 || precios.precioGold).toFixed(2) + '</td>' +
+                            '<td>$' + (p.lista4 || precios.precioPremium).toFixed(2) + '</td>' +
+                            '<td>$' + (p.lista5 || precios.precioMayorista).toFixed(2) + '</td>' +
+                            '<td>' + esc(p.departamento) + '</td>' +
+                            '<td>' + statusBadge + '</td>' +
+                            '</tr>';
+                    }).join('');
+
+                    // Resumen
+                    var subtotal = 0;
+                    _importFacturaData.forEach(function(p) { subtotal += p.cantidad * p.costo; });
+                    var itbms = subtotal * 0.07;
+                    document.getElementById('importFacturaResumen').innerHTML =
+                        '<div style="display:flex;gap:16px;flex-wrap:wrap;">' +
+                        '<div style="background:#e8f5e9;padding:8px 14px;border-radius:6px;"><strong style="color:#2e7d32;">' + actualizados + '</strong> productos a actualizar</div>' +
+                        '<div style="background:#e3f2fd;padding:8px 14px;border-radius:6px;"><strong style="color:#1565c0;">' + nuevos + '</strong> productos nuevos</div>' +
+                        (advertencias > 0 ? '<div style="background:#fff8e1;padding:8px 14px;border-radius:6px;"><strong style="color:#f57f17;">' + advertencias + '</strong> advertencias</div>' : '') +
+                        (errores > 0 ? '<div style="background:#ffebee;padding:8px 14px;border-radius:6px;"><strong style="color:#c62828;">' + errores + '</strong> errores</div>' : '') +
+                        '</div>' +
+                        '<div style="margin-top:12px;text-align:right;font-size:14px;">' +
+                        'Subtotal: <strong>$' + subtotal.toFixed(2) + '</strong> | ' +
+                        'ITBMS: <strong>$' + itbms.toFixed(2) + '</strong> | ' +
+                        'Total: <strong style="color:var(--primary);font-size:16px;">$' + (subtotal + itbms).toFixed(2) + '</strong></div>';
+
+                    document.getElementById('modalImportFactura').classList.add('active');
+                } catch(e) {
+                    showToast('Error leyendo archivo: ' + e.message, 'error');
+                    console.error(e);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        },
+
+        async confirmar() {
+            if (!_importFacturaData || _importFacturaData.length === 0) return;
+
+            var btn = document.getElementById('btnConfirmarImportFactura');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+
+            try {
+                var subtotal = 0;
+                var lineas = [];
+                var productosActualizados = 0, productosNuevos = 0;
+
+                for (var i = 0; i < _importFacturaData.length; i++) {
+                    var p = _importFacturaData[i];
+                    if (!p.nombre || p.cantidad <= 0 || p.costo <= 0) continue;
+
+                    var lineTotal = p.cantidad * p.costo;
+                    subtotal += lineTotal;
+
+                    var precios = calcularPrecios(p.costo);
+                    var precioMostrador = p.lista1 || precios.precioMostrador;
+                    var precioPlatinium = p.lista2 || precios.precioPlatinium;
+                    var precioGold = p.lista3 || precios.precioGold;
+                    var precioPremium = p.lista4 || precios.precioPremium;
+                    var precioMayorista = p.lista5 || precios.precioMayorista;
+
+                    if (p.existing && p.productoId) {
+                        // Update existing product
+                        var newStock = (p.existing.stock || 0) + p.cantidad;
+                        await ECSA.updateDocument('productos', p.productoId, {
+                            stock: newStock,
+                            stockBajo: newStock <= (p.existing.minStock || 5),
+                            costo: p.costo,
+                            precioMostrador: precioMostrador,
+                            precioPlatinium: precioPlatinium,
+                            precioGold: precioGold,
+                            precioPremium: precioPremium,
+                            precioMayorista: precioMayorista
+                        });
+                        productosActualizados++;
+                    } else {
+                        // Create new product
+                        var newProd = {
+                            sku: p.sku,
+                            nombre: p.nombre,
+                            departamento: p.departamento || 'Otros',
+                            costo: p.costo,
+                            precioMostrador: precioMostrador,
+                            precioPlatinium: precioPlatinium,
+                            precioGold: precioGold,
+                            precioPremium: precioPremium,
+                            precioMayorista: precioMayorista,
+                            stock: p.cantidad,
+                            minStock: 5,
+                            stockBajo: p.cantidad <= 5,
+                            estado: 'activo',
+                            unidad: 'und'
+                        };
+                        var newId = await ECSA.addDocument('productos', newProd);
+                        p.productoId = newId;
+                        productosNuevos++;
+                    }
+
+                    lineas.push({
+                        productoId: p.productoId || null,
+                        sku: p.sku,
+                        nombre: p.nombre,
+                        cantidad: p.cantidad,
+                        precioCosto: p.costo,
+                        totalLinea: +lineTotal.toFixed(2)
+                    });
+                }
+
+                var itbms = +(subtotal * 0.07).toFixed(2);
+                var total = +(subtotal + itbms).toFixed(2);
+
+                // Find proveedor
+                var provNombre = _importFacturaHeader.proveedor || '';
+                var provId = '';
+                var prov = _proveedores.find(function(pr) {
+                    return (pr.nombre || '').toLowerCase() === provNombre.toLowerCase();
+                });
+                if (prov) provId = prov.id;
+
+                // Save compra
+                await ECSA.addDocument('compras', {
+                    numeroFactura: _importFacturaHeader.numero || 'IMP-' + Date.now(),
+                    proveedorId: provId,
+                    proveedorNombre: provNombre,
+                    fechaFactura: _importFacturaHeader.fechaFactura || new Date().toISOString().split('T')[0],
+                    fechaRecepcion: _importFacturaHeader.fechaRecepcion || new Date().toISOString().split('T')[0],
+                    lineas: lineas,
+                    subtotal: +subtotal.toFixed(2),
+                    itbms: itbms,
+                    total: total,
+                    estado: 'registrada',
+                    origen: 'importacion_excel',
+                    registradoPor: ECSA.Auth.getCurrentUser() ? ECSA.Auth.getCurrentUser().uid : 'sistema'
+                });
+
+                // Accounting entry
+                await ECSA.addDocument('asientos', {
+                    fecha: _importFacturaHeader.fechaRecepcion || new Date().toISOString().split('T')[0],
+                    tipo: 'compra',
+                    referencia: 'Compra importada FAC: ' + (_importFacturaHeader.numero || ''),
+                    lineas: [
+                        { cuenta: '1300', cuentaNombre: 'Inventario', debe: +subtotal.toFixed(2), haber: 0 },
+                        { cuenta: '1400', cuentaNombre: 'ITBMS Credito Fiscal', debe: itbms, haber: 0 },
+                        { cuenta: '2100', cuentaNombre: 'Cuentas por Pagar', debe: 0, haber: total }
+                    ],
+                    totalDebe: total, totalHaber: total, estado: 'registrado'
+                });
+
+                showToast(productosActualizados + ' productos actualizados, ' + productosNuevos + ' productos nuevos creados', 'success');
+                cerrarModal('modalImportFactura');
+                _importFacturaData = null;
+                _importFacturaHeader = null;
+                document.getElementById('importarFacturaFile').value = '';
+                loadKPIs();
+                loadHistorial();
+            } catch(e) {
+                showToast('Error: ' + e.message, 'error');
+                console.error(e);
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Importacion';
+        },
+
+        async exportarInventario() {
+            if (typeof XLSX === 'undefined') { showToast('SheetJS no cargado', 'error'); return; }
+            try {
+                var prods = await ECSA.getDocuments('productos');
+                if (!prods || prods.length === 0) { showToast('No hay productos', 'error'); return; }
+
+                var data = [['SKU', 'Nombre', 'Departamento', 'Costo', 'Lista1 (Mostrador)', 'Lista2 (Platinium)', 'Lista3 (Gold)', 'Lista4 (Premium)', 'Lista5 (Mayorista)', 'Stock Actual', 'Stock Minimo', 'Proveedor', 'Ultima Actualizacion']];
+                prods.forEach(function(p) {
+                    data.push([
+                        p.sku || '', p.nombre || p.name || '', p.departamento || '',
+                        p.costo || 0, p.precioMostrador || 0, p.precioPlatinium || 0,
+                        p.precioGold || 0, p.precioPremium || 0, p.precioMayorista || 0,
+                        p.stock || 0, p.minStock || 0, p.proveedor || '', p.updatedAt || ''
+                    ]);
+                });
+
+                var wb = XLSX.utils.book_new();
+                var ws = XLSX.utils.aoa_to_sheet(data);
+                ws['!cols'] = [{wch:14},{wch:28},{wch:14},{wch:10},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:10},{wch:10},{wch:18},{wch:18}];
+                XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+                XLSX.writeFile(wb, 'inventario_completo_ecsa_' + new Date().toISOString().split('T')[0] + '.xlsx');
+                showToast('Inventario exportado', 'success');
+            } catch(e) {
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+    };
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // MODO DE PRUEBA - Permite lectura y escritura sin autenticacion
+    // IMPORTANTE: Cambiar estas reglas antes de ir a produccion
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
