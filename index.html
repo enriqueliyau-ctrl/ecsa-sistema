@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- ECSA v2026-04-04 18:25 - Firebase Data-cfasync Fix -->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -1528,7 +1529,7 @@
         <div class="container">
             <div class="top-bar-left">
                 <span><i class="fas fa-phone-alt"></i> 6090-9890</span>
-                <span><i class="fas fa-envelope"></i> ventas@ecsa.com</span>
+                <span><i class="fas fa-envelope"></i> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c4b2a1aab0a5b784a1a7b7a5eaa7aba9">[email&#160;protected]</a></span>
                 <span><i class="fas fa-clock"></i> Lun-Sab 8am-6pm | Dom 8am-3pm</span>
             </div>
             <div class="top-bar-right">
@@ -2410,7 +2411,7 @@
                     </div>
                     <div class="footer-contact-item">
                         <i class="fas fa-envelope"></i>
-                        <span>ventas@ecsa.com</span>
+                        <span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5f293a312b3e2c1f3a3c2c3e713c3032">[email&#160;protected]</a></span>
                     </div>
                     <div class="footer-contact-item">
                         <i class="fas fa-clock"></i>
@@ -2442,7 +2443,7 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script data-cfasync="false" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
@@ -2467,7 +2468,110 @@
         { id: 'cabinas', name: 'Cabinas de Ducha', icon: 'fa-shower', sub: 'Vidrio templado', badge: null },
     ];
 
-    const products = [
+
+    // ================================================================
+    // ECSA — Cargar productos de Firebase Firestore en tiempo real
+    // Se ejecuta después de que firebase-config.js inicializa ECSA.Firebase
+    // ================================================================
+    var DEPT_MAP = {
+        'Alicates y Pinzas': 'herramientas',
+        'Aspiradoras': 'herramientas',
+        'Baterias y Cargadores': 'herramientas',
+        'Brocas y Accesorios': 'herramientas',
+        'Cepillos': 'herramientas',
+        'Cinceles y Formones': 'herramientas',
+        'Cortadores': 'herramientas',
+        'Discos Abrasivos': 'herramientas',
+        'Equipos de Soldadura': 'herramientas',
+        'Esmeriles': 'herramientas',
+        'Espatulas': 'herramientas',
+        'Herramientas Electricas': 'herramientas',
+        'Herramientas INGCO': 'herramientas',
+        'Herramientas de Albanileria': 'herramientas',
+        'Hidrolavadoras': 'herramientas',
+        'Lijadoras': 'herramientas',
+        'Lijas y Abrasivos': 'herramientas',
+        'Llaves y Destornilladores': 'herramientas',
+        'Martillos': 'herramientas',
+        'Medicion': 'herramientas',
+        'Puntas de Destornillador': 'herramientas',
+        'Sierras': 'herramientas',
+        'Sopladoras': 'herramientas',
+        'Ferreteria General': 'herramientas',
+        'Jardineria': 'herramientas',
+        'Materiales de Construccion': 'construccion',
+        'Plomeria': 'construccion',
+        'Electricidad': 'construccion',
+        'PVC Interiores': 'pvc',
+        'Pinturas': 'pintura',
+        'Pisos y Ceramicas': 'pisos',
+        'Ventanas': 'ventanas',
+        'Cabinas': 'cabinas'
+    };
+
+    function normalizarDept(s) {
+        if (!s) return '';
+        // Normalizar: quitar tildes para buscar en el mapa
+        return s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+    }
+
+    function mapearProductoFirebase(doc, i) {
+        var d = doc.data ? doc.data() : doc;
+        var deptRaw = d.departamento || d.dept || '';
+        var dept = DEPT_MAP[deptRaw] || DEPT_MAP[normalizarDept(deptRaw)] || 'herramientas';
+        return {
+            id: doc.id || d.sku || String(i),
+            sku: d.sku || '',
+            name: d.nombre || d.name || '',
+            dept: dept,
+            deptLabel: deptRaw,
+            price: parseFloat(d.precio || d.price) || 0,
+            oldPrice: null,
+            rating: 4.5,
+            reviews: 0,
+            icon: 'fa-wrench',
+            imagen: d.imagen || '',
+            badge: null,
+            stock: parseInt(d.stock) || 0,
+            status: d.estado || d.status || 'activo'
+        };
+    }
+
+    function cargarProductosFirebase() {
+        // Esperar a que ECSA.Firebase esté listo (inicializado por firebase-config.js)
+        var intentos = 0;
+        function intentar() {
+            if (window.ECSA && window.ECSA.Firebase && window.ECSA.Firebase.db) {
+                var db = window.ECSA.Firebase.db;
+                db.collection('productos').onSnapshot(function(snapshot) {
+                    if (!snapshot || !snapshot.docs || snapshot.docs.length === 0) return;
+                    var lista = [];
+                    for (var i = 0; i < snapshot.docs.length; i++) {
+                        var p = mapearProductoFirebase(snapshot.docs[i], i);
+                        if (p.name && p.price > 0 && p.status !== 'inactivo') {
+                            lista.push(p);
+                        }
+                    }
+                    if (lista.length > 0) {
+                        products = lista;
+                        renderProducts(lista);
+                        document.getElementById('productCount').textContent = lista.length + ' productos';
+                        console.log('ECSA Store: ' + lista.length + ' productos cargados de Firebase');
+                    }
+                }, function(error) {
+                    console.error('ECSA: Error cargando productos de Firestore:', error.message);
+                });
+            } else if (intentos < 30) {
+                intentos++;
+                setTimeout(intentar, 200); // reintentar cada 200ms hasta 6 segundos
+            } else {
+                console.warn('ECSA: Firebase no disponible, usando productos de demo');
+            }
+        }
+        intentar();
+    }
+
+    let products = [
         { id: 1, name: 'Panel PVC Blanco Liso 25cm x 5.95m', dept: 'pvc', price: 4.95, oldPrice: 5.95, rating: 4.5, reviews: 32, icon: 'fa-layer-group', badge: '-17%' },
         { id: 2, name: 'Panel PVC Madera Cerezo 25cm x 5.95m', dept: 'pvc', price: 6.50, oldPrice: 7.50, rating: 5, reviews: 18, icon: 'fa-layer-group', badge: 'Nuevo', badgeClass: 'new' },
         { id: 3, name: 'Cemento Gris Argos 42.5kg Tipo I', dept: 'construccion', price: 10.75, oldPrice: null, rating: 5, reviews: 56, icon: 'fa-building', badge: null },
@@ -2511,7 +2615,7 @@
             <div class="product-card" data-dept="${p.dept}">
                 ${badgeHtml}
                 <div class="product-img">
-                    <i class="fas ${p.icon}"></i>
+                    ${p.imagen ? `<img src="${p.imagen}" alt="${p.name}" style="width:100%;height:160px;object-fit:contain;padding:8px" loading="lazy">` : `<i class="fas ${p.icon || 'fa-wrench'}"></i>`}
                     <div class="product-img-overlay">
                         <button title="Vista rapida" onclick="event.stopPropagation();"><i class="fas fa-eye"></i></button>
                         <button title="Agregar al carrito" onclick="event.stopPropagation(); addToCart(${p.id})"><i class="fas fa-cart-plus"></i></button>
@@ -2923,6 +3027,13 @@
     renderProducts(products);
     startHeroAuto();
 
+    // Exponer funciones para onclick en HTML
+    window.filterProducts = filterProducts;
+    window.addToCart = addToCart;
+    window.toggleCart = toggleCart;
+    window.openCheckout = openCheckout;
+    window.openAuthModal = openAuthModal;
+    window.changeSlide = changeSlide;
     // Smooth scroll for nav links
     document.querySelectorAll('.nav-links a[href^="#"], .mobile-menu-links a[href^="#"]').forEach(a => {
         a.addEventListener('click', function(e) {
@@ -2931,15 +3042,14 @@
                 e.preventDefault();
                 const target = document.querySelector(href);
                 if (target) target.scrollIntoView({ behavior: 'smooth' });
-                if (document.getElementById('mobileMenu').classList.contains('active')) toggleMobileMenu();
+                if (document.getElementById('mobileMenu') {
+                    document.getElementById('mobileMenu').classList.remove('active');
+                    document.body.style.overflow = '';
+                }
             }
         });
     });
 
-    // Header shrink on scroll
-    window.addEventListener('scroll', function() {
-        document.getElementById('header').style.boxShadow = window.scrollY > 50 ? '0 2px 15px rgba(0,0,0,0.1)' : 'var(--shadow-sm)';
-    });
-    </script>
+</script>
 </body>
 </html>

@@ -772,14 +772,29 @@
                     </div>
                     <select class="form-control" style="width:auto" id="filterDept" onchange="filterProducts()">
                         <option value="">Todos los Departamentos</option>
-                        <option>Materiales de Construccion</option>
-                        <option>Herramientas Manuales</option>
-                        <option>Herramientas Electricas</option>
-                        <option>Plomeria</option>
-                        <option>Electricidad</option>
-                        <option>Pinturas</option>
-                        <option>Jardineria</option>
-                        <option>Ferreteria General</option>
+                        <option>Alicates y Pinzas</option>
+                        <option>Aspiradoras</option>
+                        <option>Baterías y Cargadores</option>
+                        <option>Brocas y Accesorios</option>
+                        <option>Cepillos</option>
+                        <option>Cinceles y Formones</option>
+                        <option>Cortadores</option>
+                        <option>Discos Abrasivos</option>
+                        <option>Equipos de Soldadura</option>
+                        <option>Esmeriles</option>
+                        <option>Espátulas</option>
+                        <option>Herramientas Eléctricas</option>
+                        <option>Herramientas INGCO</option>
+                        <option>Herramientas de Albañilería</option>
+                        <option>Hidrolavadoras</option>
+                        <option>Lijadoras</option>
+                        <option>Lijas y Abrasivos</option>
+                        <option>Llaves y Destornilladores</option>
+                        <option>Martillos</option>
+                        <option>Medición</option>
+                        <option>Puntas de Destornillador</option>
+                        <option>Sierras</option>
+                        <option>Sopladoras</option>
                     </select>
                 </div>
                 <div class="toolbar-right">
@@ -792,7 +807,10 @@
                         </select>
                         <button class="btn btn-outline btn-sm" onclick="executeBulkAction()">Aplicar</button>
                     </div>
-                    <button class="btn btn-outline btn-sm" onclick="alert('Importar CSV (demo)')"><i class="fas fa-file-import"></i> Importar</button>
+                    <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0">
+                        <i class="fas fa-file-import"></i> Importar CSV
+                        <input type="file" id="csvImportInput" accept=".csv" style="display:none" onchange="importProductsCSV(event)">
+                    </label>
                     <button class="btn btn-outline btn-sm" onclick="exportProductsCSV()"><i class="fas fa-file-export"></i> Exportar</button>
                     <button class="btn btn-primary" onclick="openModal('productModal'); resetProductForm()">
                         <i class="fas fa-plus"></i> Nuevo Producto
@@ -1288,14 +1306,29 @@
                     <label>Departamento *</label>
                     <select class="form-control" id="prodDept">
                         <option value="">Seleccionar...</option>
-                        <option>Materiales de Construccion</option>
-                        <option>Herramientas Manuales</option>
-                        <option>Herramientas Electricas</option>
-                        <option>Plomeria</option>
-                        <option>Electricidad</option>
-                        <option>Pinturas</option>
-                        <option>Jardineria</option>
-                        <option>Ferreteria General</option>
+                        <option>Alicates y Pinzas</option>
+                        <option>Aspiradoras</option>
+                        <option>Baterías y Cargadores</option>
+                        <option>Brocas y Accesorios</option>
+                        <option>Cepillos</option>
+                        <option>Cinceles y Formones</option>
+                        <option>Cortadores</option>
+                        <option>Discos Abrasivos</option>
+                        <option>Equipos de Soldadura</option>
+                        <option>Esmeriles</option>
+                        <option>Espátulas</option>
+                        <option>Herramientas Eléctricas</option>
+                        <option>Herramientas INGCO</option>
+                        <option>Herramientas de Albañilería</option>
+                        <option>Hidrolavadoras</option>
+                        <option>Lijadoras</option>
+                        <option>Lijas y Abrasivos</option>
+                        <option>Llaves y Destornilladores</option>
+                        <option>Martillos</option>
+                        <option>Medición</option>
+                        <option>Puntas de Destornillador</option>
+                        <option>Sierras</option>
+                        <option>Sopladoras</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -1849,7 +1882,57 @@ function renderLowStockAlerts() {
 function exportProductsCSV() {
     let csv = 'SKU,Nombre,Departamento,Precio,Costo,Stock,Unidad,Estado\n';
     demoProducts.forEach(p => { csv += `${p.sku},"${p.name}",${p.dept},${p.price},${p.cost},${p.stock},${p.unit},${p.status}\n`; });
+
     downloadCSV(csv, 'productos_ecsa.csv');
+}
+
+function importProductsCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const lines = e.target.result.split('\n').filter(l => l.trim());
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        let imported = 0, errors = 0;
+        const idxSKU  = headers.findIndex(h => h.includes('sku'));
+        const idxNom  = headers.findIndex(h => h.includes('nombre') || h.includes('name'));
+        const idxDept = headers.findIndex(h => h.includes('departamento') || h.includes('dept') || h.includes('categoria'));
+        const idxPrc  = headers.findIndex(h => h.includes('precio') || h.includes('price'));
+        const idxCst  = headers.findIndex(h => h.includes('costo') || h.includes('cost'));
+        const idxStk  = headers.findIndex(h => h.includes('stock'));
+        const idxUnit = headers.findIndex(h => h.includes('unidad') || h.includes('unit'));
+        const idxStat = headers.findIndex(h => h.includes('estado') || h.includes('status'));
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$|^(?=,))/g) || lines[i].split(',');
+            const clean = cols.map(c => c ? c.replace(/^"|"$/g,'').trim() : '');
+            const sku  = idxSKU  >= 0 ? clean[idxSKU]  : '';
+            const name = idxNom  >= 0 ? clean[idxNom]  : '';
+            const dept = idxDept >= 0 ? clean[idxDept] : 'Herramientas INGCO';
+            const price= idxPrc  >= 0 ? parseFloat(clean[idxPrc])  || 0 : 0;
+            const cost = idxCst  >= 0 ? parseFloat(clean[idxCst])  || 0 : 0;
+            const stock= idxStk  >= 0 ? parseInt(clean[idxStk])    || 0 : 0;
+            const unit = idxUnit >= 0 ? clean[idxUnit] : 'Unidad';
+            const stat = idxStat >= 0 ? clean[idxStat] : 'activo';
+            if (!sku || !name) { errors++; continue; }
+            const existing = demoProducts.findIndex(p => p.sku === sku);
+            const prod = {
+                id: existing >= 0 ? demoProducts[existing].id : (Math.max(0,...demoProducts.map(p=>p.id)) + imported + 1),
+                sku, name, dept, price, cost, stock,
+                minStock: Math.max(1, Math.floor(stock * 0.1)),
+                unit: unit || 'Unidad',
+                status: (stat === 'active' || stat === 'activo') ? 'activo' : 'inactivo',
+                featured: false, desc: ''
+            };
+            if (existing >= 0) { demoProducts[existing] = prod; }
+            else { demoProducts.push(prod); }
+            imported++;
+        }
+        event.target.value = '';
+        renderProducts();
+        renderDashboard();
+        alert(`✅ Importación completa:\n• ${imported} productos importados/actualizados\n• ${errors} filas con error (SKU o Nombre vacío)`);
+    };
+    reader.readAsText(file, 'UTF-8');
 }
 
 // ===== ORDERS TABLE =====
@@ -2960,9 +3043,276 @@ function cancelarImportacion() {
 }
 
 // ===== INIT =====
+// ================================================================
+// FIREBASE FIRESTORE — Integración completa de productos
+// Funciona en la web (ecsapty.com) y en modo local (file://)
+// ================================================================
+
+const FB_COLECCION = 'productos';
+
+// Cargar productos desde Firestore y actualizar la UI en tiempo real
+function cargarProductosFirebase() {
+    const FB = window.ECSA && window.ECSA.Firebase;
+    if (!FB) { renderProducts(); return; }
+
+    // Mostrar indicador de carga
+    const tbody = document.getElementById('productsTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin"></i> Cargando productos...</td></tr>';
+
+    // Escuchar cambios en tiempo real
+    FB.db.collection(FB_COLECCION).onSnapshot(snapshot => {
+        demoProducts = snapshot.docs.map((doc, i) => {
+            const d = doc.data();
+            return {
+                id:        doc.id,
+                firestoreId: doc.id,
+                sku:       d.sku       || '',
+                name:      d.nombre    || d.name || '',
+                dept:      d.departamento || d.dept || '',
+                price:     parseFloat(d.precio || d.price) || 0,
+                cost:      parseFloat(d.costo  || d.cost)  || 0,
+                stock:     parseInt(d.stock)   || 0,
+                minStock:  parseInt(d.minStock) || 5,
+                unit:      d.unidad    || d.unit    || 'Unidad',
+                status:    d.estado    || d.status  || 'activo',
+                featured:  d.featured  || false,
+                desc:      d.desc      || '',
+                imagen:    d.imagen    || ''
+            };
+        });
+        renderProducts();
+        renderLowStockAlerts();
+        renderDashboard();
+        console.log('ECSA Admin: ' + demoProducts.length + ' productos cargados de Firestore.');
+    }, err => {
+        console.error('Error cargando productos:', err);
+        renderProducts(); // fallback a demo
+    });
+}
+
+// Guardar producto en Firestore
+async function guardarProductoFirebase(data, editId) {
+    const FB = window.ECSA && window.ECSA.Firebase;
+    const docData = {
+        sku:          data.sku,
+        nombre:       data.name,
+        name:         data.name,
+        departamento: data.dept,
+        dept:         data.dept,
+        precio:       data.price,
+        price:        data.price,
+        costo:        data.cost,
+        cost:         data.cost,
+        stock:        data.stock,
+        minStock:     data.minStock || 5,
+        unidad:       data.unit,
+        unit:         data.unit,
+        estado:       data.status || 'activo',
+        status:       data.status || 'activo',
+        featured:     data.featured || false,
+        desc:         data.desc || '',
+        imagen:       data.imagen || '',
+        stockBajo:    data.stock <= (data.minStock || 5)
+    };
+
+    if (!FB) {
+        // Modo local — usar array en memoria
+        if (editId) {
+            const idx = demoProducts.findIndex(p => p.id == editId || p.firestoreId == editId);
+            if (idx >= 0) demoProducts[idx] = { ...demoProducts[idx], ...data };
+        } else {
+            data.id = Date.now();
+            demoProducts.push(data);
+        }
+        renderProducts(); renderLowStockAlerts();
+        return;
+    }
+
+    try {
+        if (editId) {
+            await FB.db.collection(FB_COLECCION).doc(String(editId)).update(docData);
+        } else {
+            await FB.db.collection(FB_COLECCION).add(docData);
+        }
+        // onSnapshot actualizará automáticamente
+    } catch(e) {
+        console.error('Error guardando producto:', e);
+        alert('Error al guardar: ' + e.message);
+    }
+}
+
+// Eliminar producto de Firestore
+async function eliminarProductoFirebase(id) {
+    const FB = window.ECSA && window.ECSA.Firebase;
+    if (!FB) {
+        demoProducts = demoProducts.filter(p => p.id !== id && p.firestoreId !== id);
+        renderProducts(); renderLowStockAlerts();
+        return;
+    }
+    try {
+        await FB.db.collection(FB_COLECCION).doc(String(id)).delete();
+    } catch(e) {
+        console.error('Error eliminando producto:', e);
+        alert('Error al eliminar: ' + e.message);
+    }
+}
+
+// Importar CSV masivo a Firestore (en lotes de 500)
+async function importarCSVFirebase(rows) {
+    const FB = window.ECSA && window.ECSA.Firebase;
+    if (!FB) {
+        // Modo local
+        rows.forEach(r => {
+            const existing = demoProducts.findIndex(p => p.sku === r.sku);
+            if (existing >= 0) demoProducts[existing] = { ...demoProducts[existing], ...r };
+            else { r.id = Date.now() + Math.random(); demoProducts.push(r); }
+        });
+        renderProducts(); renderLowStockAlerts();
+        return rows.length;
+    }
+
+    // Subir en lotes de 400 (límite Firestore = 500)
+    const BATCH_SIZE = 400;
+    let total = 0;
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const batch = FB.db.batch();
+        const lote = rows.slice(i, i + BATCH_SIZE);
+        lote.forEach(r => {
+            const docRef = FB.db.collection(FB_COLECCION).doc(r.sku);
+            batch.set(docRef, {
+                sku: r.sku, nombre: r.name, name: r.name,
+                departamento: r.dept, dept: r.dept,
+                precio: r.price, price: r.price,
+                costo: r.cost, cost: r.cost,
+                stock: r.stock, minStock: r.minStock || 5,
+                unidad: r.unit || 'Unidad', unit: r.unit || 'Unidad',
+                estado: r.status || 'activo', status: r.status || 'activo',
+                featured: false, desc: r.desc || '', imagen: r.imagen || '',
+                stockBajo: r.stock <= (r.minStock || 5)
+            }, { merge: true });
+        });
+        await batch.commit();
+        total += lote.length;
+        // Actualizar progreso
+        const pct = Math.round((total / rows.length) * 100);
+        const btn = document.querySelector('label[for="csvImportInput"]') || document.querySelector('.btn-outline');
+        if (btn) btn.textContent = `Importando... ${pct}%`;
+    }
+    return total;
+}
+
+// ================================================================
+// SOBRESCRIBIR funciones originales para usar Firebase
+// ================================================================
+
+// Override saveProduct
+const _origSaveProduct = window.saveProduct || saveProduct;
+saveProduct = async function() {
+    const name = document.getElementById('prodName').value.trim();
+    const sku  = document.getElementById('prodSKU').value.trim();
+    const dept = document.getElementById('prodDept').value;
+    const price = parseFloat(document.getElementById('prodPrice').value);
+    const stock = parseInt(document.getElementById('prodStock').value);
+    if (!name || !sku || !dept || isNaN(price) || isNaN(stock)) {
+        alert('Complete todos los campos obligatorios (*)'); return;
+    }
+    const editId = document.getElementById('productEditId').value;
+    const data = {
+        name, sku, dept, price,
+        cost:     parseFloat(document.getElementById('prodCost').value) || 0,
+        stock,
+        minStock: parseInt(document.getElementById('prodMinStock').value) || 5,
+        unit:     document.getElementById('prodUnit').value,
+        desc:     document.getElementById('prodDesc').value,
+        featured: document.getElementById('prodFeatured').checked,
+        status:   'activo'
+    };
+    closeModal('productModal');
+    await guardarProductoFirebase(data, editId || null);
+    alert('✅ Producto guardado en la nube');
+};
+
+// Override deleteProduct
+deleteProduct = function(id) {
+    document.getElementById('deleteMessage').textContent = '¿Eliminar este producto de la base de datos?';
+    deleteCallback = async () => { await eliminarProductoFirebase(id); };
+    openModal('deleteModal');
+};
+
+// Override importProductsCSV
+importProductsCSV = async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const lines = e.target.result.split('\n').filter(l => l.trim());
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const idxSKU  = headers.findIndex(h => h.includes('sku'));
+        const idxNom  = headers.findIndex(h => h.includes('nombre') || h.includes('name'));
+        const idxDept = headers.findIndex(h => h.includes('departamento') || h.includes('dept') || h.includes('categ'));
+        const idxPrc  = headers.findIndex(h => h.includes('precio') || h.includes('price'));
+        const idxCst  = headers.findIndex(h => h.includes('costo') || h.includes('cost'));
+        const idxStk  = headers.findIndex(h => h.includes('stock'));
+        const idxUnit = headers.findIndex(h => h.includes('unidad') || h.includes('unit'));
+        const idxImg  = headers.findIndex(h => h.includes('imagen') || h.includes('image') || h.includes('url'));
+
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,))/g) || lines[i].split(',');
+            const c = cols.map(x => x ? x.replace(/^"|"$/g,'').trim() : '');
+            const sku  = idxSKU  >= 0 ? c[idxSKU]  : '';
+            const name = idxNom  >= 0 ? c[idxNom]  : '';
+            if (!sku || !name) continue;
+            rows.push({
+                sku, name,
+                dept:  idxDept >= 0 ? c[idxDept] : 'Herramientas INGCO',
+                price: parseFloat(idxPrc >= 0 ? c[idxPrc] : 0) || 0,
+                cost:  parseFloat(idxCst >= 0 ? c[idxCst] : 0) || 0,
+                stock: parseInt(idxStk  >= 0 ? c[idxStk]  : 0) || 0,
+                unit:  idxUnit >= 0 ? c[idxUnit] : 'Unidad',
+                imagen: idxImg >= 0 ? c[idxImg]  : '',
+                status: 'activo'
+            });
+        }
+        event.target.value = '';
+        if (!rows.length) { alert('No se encontraron productos válidos en el CSV'); return; }
+        const total = await importarCSVFirebase(rows);
+        alert(`✅ ${total} productos importados a Firebase.\nYa se ven en ecsapty.com desde cualquier dispositivo.`);
+        // Restaurar botón
+        const lbl = document.querySelector('label[for="csvImportInput"]');
+        if (lbl) lbl.innerHTML = '<i class="fas fa-file-import"></i> Importar CSV';
+    };
+    reader.readAsText(file, 'UTF-8');
+};
+
+// Override executeBulkAction para Firebase
+const _origBulkAction = executeBulkAction;
+executeBulkAction = async function() {
+    const action = document.getElementById('bulkAction').value;
+    if (!action) return;
+    const selected = [...document.querySelectorAll('.product-check:checked')].map(cb => cb.dataset.id);
+    if (!selected.length) { alert('Seleccione al menos un producto'); return; }
+    const FB = window.ECSA && window.ECSA.Firebase;
+
+    if (action === 'delete') {
+        if (!confirm('¿Eliminar ' + selected.length + ' productos de Firebase?')) return;
+        for (const id of selected) { await eliminarProductoFirebase(id); }
+    } else {
+        const nuevoEstado = action === 'activate' ? 'activo' : 'inactivo';
+        if (FB) {
+            const batch = FB.db.batch();
+            selected.forEach(id => batch.update(FB.db.collection(FB_COLECCION).doc(String(id)), { estado: nuevoEstado, status: nuevoEstado }));
+            await batch.commit();
+        } else {
+            demoProducts.forEach(p => { if (selected.includes(String(p.id))) p.status = nuevoEstado; });
+            renderProducts();
+        }
+    }
+    document.getElementById('bulkAction').value = '';
+};
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Render demo data for offline/fallback display
-    renderProducts();
+    // Render placeholders mientras carga Firebase
     renderOrders();
     renderCustomers();
     renderMemberships();
@@ -2971,12 +3321,13 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDashRecentOrders();
     renderTopProducts();
     renderDeptBreakdown();
-    renderLowStockAlerts();
     initSalesChart();
     initReportCharts();
     loadVendedoresList();
-    // Setup Firebase auth - this will show login or load real data
+    // Setup Firebase auth primero, luego carga productos
     setupAdminAuth();
+    // Cargar productos de Firebase (o localStorage en modo local)
+    setTimeout(cargarProductosFirebase, 800);
 });
 </script>
 </body>

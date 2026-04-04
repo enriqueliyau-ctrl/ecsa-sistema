@@ -996,7 +996,7 @@
 <!-- ===== PRINT HEADER (visible only in print) ===== -->
 <div class="print-header" id="printHeader">
     <h2>Empresas Centrales SA</h2>
-    <p>Tel: 6090-9890 | Email: ventas@ecsa.com</p>
+    <p>Tel: 6090-9890 | Email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bccad9d2c8ddcffcd9dfcfdd92dfd3d1">[email&#160;protected]</a></p>
     <p>Orden de Recepcion de Mercancia</p>
     <hr style="margin:10px 0;">
 </div>
@@ -1074,7 +1074,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -2367,15 +2367,4 @@
                 var ws = XLSX.utils.aoa_to_sheet(data);
                 ws['!cols'] = [{wch:14},{wch:28},{wch:14},{wch:10},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:10},{wch:10},{wch:18},{wch:18}];
                 XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
-                XLSX.writeFile(wb, 'inventario_completo_ecsa_' + new Date().toISOString().split('T')[0] + '.xlsx');
-                showToast('Inventario exportado', 'success');
-            } catch(e) {
-                showToast('Error: ' + e.message, 'error');
-            }
-        }
-    };
-
-})();
-</script>
-</body>
-</html>
+                XLSX.writeFile(wb, 'inventario_completo_ecsa_' + new Date().toISOString().split('T')
