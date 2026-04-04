@@ -1,0 +1,3334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administracion - Empresas Centrales SA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #2E9CDB;
+            --primary-dark: #2480b8;
+            --primary-light: #e8f4fb;
+            --secondary: #FF6B00;
+            --secondary-dark: #d95b00;
+            --white: #ffffff;
+            --bg: #f0f2f5;
+            --text: #333333;
+            --text-light: #777777;
+            --border: #e0e0e0;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 70px;
+            --topbar-height: 60px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed;
+            left: 0; top: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            color: var(--white);
+            z-index: 1000;
+            transition: width 0.3s ease;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+        .sidebar-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            min-height: 60px;
+        }
+        .sidebar-header .logo-icon {
+            min-width: 38px; height: 38px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px;
+        }
+        .sidebar-header .logo-text {
+            font-size: 14px; font-weight: 600;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+        .sidebar.collapsed .logo-text { opacity: 0; pointer-events: none; }
+
+        .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 20px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-nav a:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+        .sidebar-nav a.active {
+            color: var(--white);
+            background: rgba(46,156,219,0.15);
+            border-left-color: var(--primary);
+        }
+        .sidebar-nav a i { min-width: 22px; text-align: center; font-size: 16px; }
+        .sidebar-nav .nav-label { transition: opacity 0.2s; }
+        .sidebar.collapsed .nav-label { opacity: 0; pointer-events: none; }
+        .sidebar-nav .nav-divider {
+            height: 1px; background: rgba(255,255,255,0.08);
+            margin: 8px 16px;
+        }
+        .sidebar-footer {
+            padding: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-footer a {
+            display: flex; align-items: center; gap: 14px;
+            padding: 10px 8px;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none; font-size: 14px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .sidebar-footer a:hover { color: #ff6b6b; background: rgba(255,107,107,0.1); }
+        .sidebar-footer a i { min-width: 22px; text-align: center; }
+        .sidebar.collapsed .sidebar-footer .nav-label { opacity: 0; }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+        .sidebar.collapsed ~ .main-content { margin-left: var(--sidebar-collapsed); }
+
+        /* ===== TOP BAR ===== */
+        .topbar {
+            height: var(--topbar-height);
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px;
+            position: sticky; top: 0;
+            z-index: 500;
+            box-shadow: var(--shadow);
+        }
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .topbar-toggle {
+            background: none; border: none; font-size: 20px;
+            color: var(--text); cursor: pointer; padding: 4px;
+        }
+        .topbar-search {
+            position: relative;
+        }
+        .topbar-search input {
+            padding: 8px 14px 8px 36px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-family: inherit; font-size: 13px;
+            width: 280px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .topbar-search input:focus { border-color: var(--primary); }
+        .topbar-search i {
+            position: absolute; left: 12px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light); font-size: 13px;
+        }
+        .topbar-right { display: flex; align-items: center; gap: 20px; }
+        .topbar-notif {
+            position: relative; cursor: pointer;
+            background: none; border: none; font-size: 18px; color: var(--text);
+        }
+        .topbar-notif .badge {
+            position: absolute; top: -4px; right: -6px;
+            background: var(--danger); color: white;
+            font-size: 10px; width: 18px; height: 18px;
+            border-radius: 50%; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .topbar-user {
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer;
+        }
+        .topbar-user .avatar {
+            width: 36px; height: 36px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 600; font-size: 14px;
+        }
+        .topbar-user .user-info { line-height: 1.3; }
+        .topbar-user .user-name { font-size: 13px; font-weight: 600; }
+        .topbar-user .user-role { font-size: 11px; color: var(--text-light); }
+
+        /* ===== PAGE CONTENT ===== */
+        .page-content { padding: 24px; }
+        .page-title {
+            font-size: 22px; font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        /* ===== CARDS ===== */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex; align-items: center; gap: 16px;
+        }
+        .kpi-card .kpi-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; color: white;
+        }
+        .kpi-card .kpi-icon.blue { background: var(--primary); }
+        .kpi-card .kpi-icon.orange { background: var(--secondary); }
+        .kpi-card .kpi-icon.green { background: var(--success); }
+        .kpi-card .kpi-icon.red { background: var(--danger); }
+        .kpi-card .kpi-value { font-size: 24px; font-weight: 700; }
+        .kpi-card .kpi-label { font-size: 12px; color: var(--text-light); }
+        .kpi-card .kpi-change { font-size: 11px; margin-top: 2px; }
+        .kpi-card .kpi-change.up { color: var(--success); }
+        .kpi-card .kpi-change.down { color: var(--danger); }
+
+        .card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            font-weight: 600; font-size: 15px;
+        }
+        .card-body { padding: 20px; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+
+        /* ===== TABLES ===== */
+        .table-container { overflow-x: auto; }
+        table {
+            width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        table th {
+            background: var(--bg);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        table tr:hover td { background: var(--primary-light); }
+
+        .badge-status {
+            padding: 4px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 500;
+            display: inline-block;
+        }
+        .badge-status.activo, .badge-status.entregado { background: #d4edda; color: #155724; }
+        .badge-status.pendiente { background: #fff3cd; color: #856404; }
+        .badge-status.procesando { background: #d1ecf1; color: #0c5460; }
+        .badge-status.enviado { background: #cce5ff; color: #004085; }
+        .badge-status.cancelado, .badge-status.inactivo { background: #f8d7da; color: #721c24; }
+        .badge-status.bajo { background: #f8d7da; color: #721c24; }
+        .badge-status.oro { background: #fff3cd; color: #856404; }
+        .badge-status.plata { background: #e2e3e5; color: #383d41; }
+        .badge-status.bronce { background: #fde0cc; color: #7a3d00; }
+        .badge-status.platino { background: #d1ecf1; color: #0c5460; }
+        .badge-status.vencida { background: #f8d7da; color: #721c24; }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 8px 16px;
+            border: none; border-radius: 6px;
+            font-family: inherit; font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-secondary:hover { background: var(--secondary-dark); }
+        .btn-outline {
+            background: transparent; border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover { background: var(--bg); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #218838; }
+        .btn-icon {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-light); font-size: 14px; padding: 4px;
+            transition: color 0.2s;
+        }
+        .btn-icon:hover { color: var(--primary); }
+        .btn-icon.delete:hover { color: var(--danger); }
+
+        /* ===== FORMS ===== */
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block; font-size: 13px; font-weight: 500;
+            margin-bottom: 4px; color: var(--text);
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit; font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(46,156,219,0.1); }
+        select.form-control { cursor: pointer; }
+        textarea.form-control { resize: vertical; min-height: 80px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .form-check {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .form-check input[type="checkbox"] {
+            width: 16px; height: 16px; cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        /* ===== MODALS ===== */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            display: none;
+            align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--white);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .modal-header h3 { font-size: 16px; font-weight: 600; }
+        .modal-close {
+            background: none; border: none; font-size: 20px;
+            cursor: pointer; color: var(--text-light);
+        }
+        .modal-close:hover { color: var(--text); }
+        .modal-body { padding: 20px; }
+        .modal-footer {
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
+            display: flex; justify-content: flex-end; gap: 10px;
+        }
+
+        /* ===== TOOLBAR ===== */
+        .toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px;
+            margin-bottom: 16px;
+        }
+        .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .toolbar .search-input {
+            padding: 7px 12px 7px 34px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit; font-size: 13px;
+            width: 240px; outline: none;
+        }
+        .toolbar .search-input:focus { border-color: var(--primary); }
+        .toolbar .search-wrap { position: relative; }
+        .toolbar .search-wrap i {
+            position: absolute; left: 10px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light); font-size: 13px;
+        }
+
+        /* ===== ALERTS ===== */
+        .alert-panel {
+            background: #fff3cd; border: 1px solid #ffc107;
+            border-radius: var(--radius); padding: 14px 18px;
+            margin-bottom: 16px; font-size: 13px;
+        }
+        .alert-panel .alert-title {
+            font-weight: 600; margin-bottom: 6px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .alert-panel ul { list-style: none; padding: 0; }
+        .alert-panel li {
+            padding: 4px 0; display: flex; align-items: center; gap: 8px;
+        }
+        .alert-panel li i { color: var(--danger); }
+
+        /* ===== SECTIONS ===== */
+        .admin-section { display: none; }
+        .admin-section.active { display: block; }
+
+        /* ===== NOTIFICATION DROPDOWN ===== */
+        .notif-dropdown {
+            position: absolute; top: 50px; right: 80px;
+            width: 320px; background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            z-index: 600; display: none;
+        }
+        .notif-dropdown.show { display: block; }
+        .notif-dropdown .notif-header {
+            padding: 14px 16px; font-weight: 600; font-size: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .notif-dropdown .notif-item {
+            padding: 12px 16px; border-bottom: 1px solid var(--border);
+            font-size: 12px; cursor: pointer; transition: background 0.2s;
+        }
+        .notif-dropdown .notif-item:hover { background: var(--primary-light); }
+        .notif-dropdown .notif-item .notif-text { margin-bottom: 4px; }
+        .notif-dropdown .notif-item .notif-time { color: var(--text-light); font-size: 11px; }
+
+        /* ===== SETTINGS ===== */
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .settings-card {
+            background: var(--white); border-radius: var(--radius);
+            box-shadow: var(--shadow); padding: 20px;
+        }
+        .settings-card h4 { font-size: 15px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+        /* ===== CHART CANVAS ===== */
+        .chart-container { position: relative; height: 280px; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .grid-2, .grid-3, .settings-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: var(--sidebar-width) !important;
+            }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { margin-left: 0 !important; }
+            .topbar-search input { width: 180px; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+            .form-row-3 { grid-template-columns: 1fr; }
+            .modal { max-width: 95%; }
+        }
+        @media (max-width: 480px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+            .topbar-search { display: none; }
+            .topbar-user .user-info { display: none; }
+        }
+
+        .mobile-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 999; display: none;
+        }
+        .mobile-overlay.active { display: block; }
+
+        /* ===== MISC ===== */
+        .product-img-thumb {
+            width: 40px; height: 40px; border-radius: 6px;
+            background: var(--bg); display: flex; align-items: center; justify-content: center;
+            color: var(--text-light); font-size: 16px;
+        }
+        .top-product-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+        .top-product-item:last-child { border: none; }
+        .top-product-rank {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: var(--primary-light); color: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700; margin-right: 10px;
+        }
+        .dept-bar {
+            height: 8px; border-radius: 4px; background: var(--bg); margin-top: 4px;
+        }
+        .dept-bar-fill { height: 100%; border-radius: 4px; background: var(--primary); }
+        .dept-item { margin-bottom: 12px; font-size: 13px; }
+        .dept-item .dept-header { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .membership-stat {
+            text-align: center; padding: 16px;
+            border-right: 1px solid var(--border);
+        }
+        .membership-stat:last-child { border: none; }
+        .membership-stat .stat-value { font-size: 28px; font-weight: 700; color: var(--primary); }
+        .membership-stat .stat-label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+        .membership-stats-row { display: flex; justify-content: space-around; }
+        .checkbox-wrap { display: flex; align-items: center; gap: 6px; }
+        .checkbox-wrap input { cursor: pointer; }
+        .bulk-actions { display: flex; align-items: center; gap: 8px; }
+        .text-muted { color: var(--text-light); font-size: 12px; }
+
+        /* LOGIN OVERLAY */
+        .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+        .login-box{background:#fff;border-radius:16px;padding:40px;width:400px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+        .login-logo{text-align:center;margin-bottom:24px;}
+        .login-overlay.hidden{display:none;}
+    </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <div class="login-logo">
+            <div style="width:60px;height:60px;background:#2E9CDB;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:24px;margin:0 auto 12px">EC</div>
+            <h2 style="font-size:20px;margin-bottom:4px">Empresas Centrales SA</h2>
+            <p style="color:#777;font-size:13px">Panel de Administracion</p>
+        </div>
+        <div id="loginForm">
+            <div class="form-group" style="margin-bottom:12px">
+                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px">Email</label>
+                <input type="email" id="loginEmail" class="form-control" placeholder="admin@ecsa.com" style="width:100%;padding:10px 12px;border-radius:8px;font-size:14px" onkeydown="if(event.key==='Enter')doAdminLogin()">
+            </div>
+            <div class="form-group" style="margin-bottom:16px">
+                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px">Contrasena</label>
+                <input type="password" id="loginPassword" class="form-control" placeholder="••••••" style="width:100%;padding:10px 12px;border-radius:8px;font-size:14px" onkeydown="if(event.key==='Enter')doAdminLogin()">
+            </div>
+            <div id="loginError" style="color:#dc3545;font-size:13px;margin-bottom:10px;display:none"></div>
+            <button onclick="doAdminLogin()" style="width:100%;padding:12px;background:#2E9CDB;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Iniciar Sesion</button>
+        </div>
+        <!-- Init System Button (shown only if no users exist) -->
+        <div id="initSystemPanel" style="display:none;margin-top:16px;padding:16px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px">
+            <p style="font-size:13px;color:#856404;margin-bottom:10px"><i class="fas fa-info-circle"></i> No hay usuarios en el sistema. Cree el administrador inicial:</p>
+            <button onclick="crearAdminInicial()" style="width:100%;padding:10px;background:#FF6B00;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit"><i class="fas fa-user-shield"></i> Inicializar Sistema</button>
+            <div id="initResult" style="display:none;margin-top:10px;padding:10px;background:#d4edda;border-radius:8px;font-size:13px;color:#155724"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ACCESS DENIED SCREEN -->
+<div class="login-overlay hidden" id="accessDenied">
+    <div class="login-box" style="text-align:center">
+        <i class="fas fa-shield-alt" style="font-size:48px;color:#dc3545;margin-bottom:16px"></i>
+        <h2 style="font-size:20px;margin-bottom:8px">Acceso Denegado</h2>
+        <p id="accessDeniedMsg" style="color:#777;font-size:14px;margin-bottom:16px">Se requiere rol <strong>Administrador</strong></p>
+        <button onclick="doAdminLogout()" style="padding:10px 24px;background:#2E9CDB;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit">Cerrar Sesion e Intentar con Otra Cuenta</button>
+    </div>
+</div>
+
+<!-- Mobile Overlay -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebarMobile()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-icon">EC</div>
+        <span class="logo-text">Empresas Centrales SA</span>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="#" class="active" data-section="dashboard">
+            <i class="fas fa-home"></i><span class="nav-label">Dashboard</span>
+        </a>
+        <a href="#" data-section="inventario">
+            <i class="fas fa-box"></i><span class="nav-label">Inventario / Productos</span>
+        </a>
+        <a href="#" data-section="pedidos">
+            <i class="fas fa-shopping-bag"></i><span class="nav-label">Pedidos</span>
+        </a>
+        <a href="#" data-section="clientes">
+            <i class="fas fa-users"></i><span class="nav-label">Clientes</span>
+        </a>
+        <a href="#" data-section="usuarios">
+            <i class="fas fa-user-shield"></i><span class="nav-label">Usuarios y Roles</span>
+        </a>
+        <a href="#" data-section="membresias">
+            <i class="fas fa-id-card"></i><span class="nav-label">Membresias</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="#" data-section="precios">
+            <i class="fas fa-tags"></i><span class="nav-label">Listas de Precios</span>
+        </a>
+        <a href="#" data-section="reportes">
+            <i class="fas fa-chart-bar"></i><span class="nav-label">Reportes</span>
+        </a>
+        <a href="#" data-section="configuracion">
+            <i class="fas fa-cog"></i><span class="nav-label">Configuracion</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="pos.html">
+            <i class="fas fa-cash-register"></i><span class="nav-label">Punto de Venta</span>
+        </a>
+        <a href="bodega.html">
+            <i class="fas fa-warehouse"></i><span class="nav-label">Bodega</span>
+        </a>
+        <a href="compras.html">
+            <i class="fas fa-truck-loading"></i><span class="nav-label">Compras</span>
+        </a>
+        <a href="contabilidad.html">
+            <i class="fas fa-calculator"></i><span class="nav-label">Contabilidad</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="#" onclick="doAdminLogout();return false;">
+            <i class="fas fa-sign-out-alt"></i><span class="nav-label">Cerrar Sesion</span>
+        </a>
+    </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main-content" id="mainContent">
+    <!-- TOP BAR -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="topbar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="topbar-search">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Buscar productos, pedidos, clientes..." id="globalSearch" onkeyup="handleGlobalSearch(event)">
+            </div>
+        </div>
+        <div class="topbar-right">
+            <button class="topbar-notif" onclick="toggleNotifications()">
+                <i class="fas fa-bell"></i>
+                <span class="badge" id="notifCount">5</span>
+            </button>
+            <div class="topbar-user">
+                <div class="avatar">AD</div>
+                <div class="user-info">
+                    <div class="user-name">Admin ECSA</div>
+                    <div class="user-role">Administrador</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Notification Dropdown -->
+    <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-header">Notificaciones</div>
+        <div class="notif-item"><div class="notif-text"><i class="fas fa-exclamation-triangle" style="color:#ffc107"></i> Cemento Gris bajo en stock (3 unidades)</div><div class="notif-time">Hace 5 min</div></div>
+        <div class="notif-item"><div class="notif-text"><i class="fas fa-shopping-bag" style="color:#2E9CDB"></i> Nuevo pedido #PED-006 recibido</div><div class="notif-time">Hace 15 min</div></div>
+        <div class="notif-item"><div class="notif-text"><i class="fas fa-user-plus" style="color:#28a745"></i> Nuevo cliente registrado: Ana Lopez</div><div class="notif-time">Hace 1 hora</div></div>
+        <div class="notif-item"><div class="notif-text"><i class="fas fa-id-card" style="color:#FF6B00"></i> 2 membresias por vencer esta semana</div><div class="notif-time">Hace 2 horas</div></div>
+        <div class="notif-item"><div class="notif-text"><i class="fas fa-chart-line" style="color:#2E9CDB"></i> Reporte semanal disponible</div><div class="notif-time">Hace 3 horas</div></div>
+    </div>
+
+    <div class="page-content">
+
+        <!-- ===== DASHBOARD SECTION ===== -->
+        <section class="admin-section active" id="section-dashboard">
+            <h1 class="page-title">Dashboard</h1>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon blue"><i class="fas fa-dollar-sign"></i></div>
+                    <div>
+                        <div class="kpi-value">$2,847.50</div>
+                        <div class="kpi-label">Ventas Hoy</div>
+                        <div class="kpi-change up"><i class="fas fa-arrow-up"></i> 12.5% vs ayer</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon orange"><i class="fas fa-clock"></i></div>
+                    <div>
+                        <div class="kpi-value">8</div>
+                        <div class="kpi-label">Pedidos Pendientes</div>
+                        <div class="kpi-change down"><i class="fas fa-arrow-up"></i> 3 nuevos</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div>
+                        <div class="kpi-value">5</div>
+                        <div class="kpi-label">Productos Bajo Stock</div>
+                        <div class="kpi-change down"><i class="fas fa-arrow-down"></i> Requiere atencion</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon green"><i class="fas fa-users"></i></div>
+                    <div>
+                        <div class="kpi-value">234</div>
+                        <div class="kpi-label">Clientes Activos</div>
+                        <div class="kpi-change up"><i class="fas fa-arrow-up"></i> 8 nuevos este mes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-header">
+                        <span>Ventas - Ultimos 7 dias</span>
+                        <select class="form-control" style="width:auto;font-size:12px" onchange="updateSalesChart(this.value)">
+                            <option value="7">7 dias</option>
+                            <option value="30">30 dias</option>
+                            <option value="90">90 dias</option>
+                        </select>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Top Productos</div>
+                    <div class="card-body" id="topProductsList">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders & Dept Breakdown -->
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <span>Pedidos Recientes</span>
+                        <a href="#" onclick="switchSection('pedidos')" style="font-size:12px;color:var(--primary);text-decoration:none">Ver todos</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>#Pedido</th><th>Cliente</th><th>Total</th><th>Estado</th></tr></thead>
+                                <tbody id="dashRecentOrders"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Ventas por Departamento</div>
+                    <div class="card-body" id="deptBreakdown"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== INVENTORY SECTION ===== -->
+        <section class="admin-section" id="section-inventario">
+            <h1 class="page-title">Inventario / Productos</h1>
+
+            <!-- Low Stock Alert -->
+            <div class="alert-panel" id="lowStockAlert">
+                <div class="alert-title"><i class="fas fa-exclamation-triangle"></i> Productos con Stock Bajo</div>
+                <ul id="lowStockList"></ul>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="search-input" placeholder="Buscar producto..." id="productSearch" onkeyup="filterProducts()">
+                    </div>
+                    <select class="form-control" style="width:auto" id="filterDept" onchange="filterProducts()">
+                        <option value="">Todos los Departamentos</option>
+                        <option>Alicates y Pinzas</option>
+                        <option>Aspiradoras</option>
+                        <option>Baterías y Cargadores</option>
+                        <option>Brocas y Accesorios</option>
+                        <option>Cepillos</option>
+                        <option>Cinceles y Formones</option>
+                        <option>Cortadores</option>
+                        <option>Discos Abrasivos</option>
+                        <option>Equipos de Soldadura</option>
+                        <option>Esmeriles</option>
+                        <option>Espátulas</option>
+                        <option>Herramientas Eléctricas</option>
+                        <option>Herramientas INGCO</option>
+                        <option>Herramientas de Albañilería</option>
+                        <option>Hidrolavadoras</option>
+                        <option>Lijadoras</option>
+                        <option>Lijas y Abrasivos</option>
+                        <option>Llaves y Destornilladores</option>
+                        <option>Martillos</option>
+                        <option>Medición</option>
+                        <option>Puntas de Destornillador</option>
+                        <option>Sierras</option>
+                        <option>Sopladoras</option>
+                    </select>
+                </div>
+                <div class="toolbar-right">
+                    <div class="bulk-actions">
+                        <select class="form-control" style="width:auto;font-size:12px" id="bulkAction">
+                            <option value="">Acciones masivas</option>
+                            <option value="activate">Activar seleccionados</option>
+                            <option value="deactivate">Desactivar seleccionados</option>
+                            <option value="delete">Eliminar seleccionados</option>
+                        </select>
+                        <button class="btn btn-outline btn-sm" onclick="executeBulkAction()">Aplicar</button>
+                    </div>
+                    <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0">
+                        <i class="fas fa-file-import"></i> Importar CSV
+                        <input type="file" id="csvImportInput" accept=".csv" style="display:none" onchange="importProductsCSV(event)">
+                    </label>
+                    <button class="btn btn-outline btn-sm" onclick="exportProductsCSV()"><i class="fas fa-file-export"></i> Exportar</button>
+                    <button class="btn btn-primary" onclick="openModal('productModal'); resetProductForm()">
+                        <i class="fas fa-plus"></i> Nuevo Producto
+                    </button>
+                </div>
+            </div>
+
+            <!-- Products Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAllProducts" onchange="toggleSelectAll(this,'product')"></th>
+                                    <th>SKU</th><th>Imagen</th><th>Nombre</th><th>Departamento</th>
+                                    <th>Precio</th><th>Costo</th><th>Stock</th><th>Estado</th><th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== ORDERS SECTION ===== -->
+        <section class="admin-section" id="section-pedidos">
+            <h1 class="page-title">Pedidos</h1>
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="search-input" placeholder="Buscar pedido..." id="orderSearch" onkeyup="filterOrders()">
+                    </div>
+                    <select class="form-control" style="width:auto" id="filterOrderStatus" onchange="filterOrders()">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="procesando">Procesando</option>
+                        <option value="enviado">Enviado</option>
+                        <option value="entregado">Entregado</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                    <input type="date" class="form-control" style="width:auto" id="filterDateFrom" onchange="filterOrders()">
+                    <input type="date" class="form-control" style="width:auto" id="filterDateTo" onchange="filterOrders()">
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>#Pedido</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Metodo Pago</th><th>Acciones</th></tr>
+                            </thead>
+                            <tbody id="ordersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== CUSTOMERS SECTION ===== -->
+        <section class="admin-section" id="section-clientes">
+            <h1 class="page-title">Clientes</h1>
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="search-input" placeholder="Buscar cliente..." id="customerSearch" onkeyup="filterCustomers()">
+                    </div>
+                    <select class="form-control" style="width:auto" id="filterMembership" onchange="filterCustomers()">
+                        <option value="">Todas las membresias</option>
+                        <option>Platino</option>
+                        <option>Oro</option>
+                        <option>Plata</option>
+                        <option>Bronce</option>
+                        <option>Sin membresia</option>
+                    </select>
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-outline btn-sm" onclick="exportCustomersCSV()"><i class="fas fa-file-export"></i> Exportar</button>
+                    <button class="btn btn-primary" onclick="openModal('customerModal'); resetCustomerForm()">
+                        <i class="fas fa-plus"></i> Nuevo Cliente
+                    </button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Nombre</th><th>Cedula</th><th>Telefono</th><th>Email</th><th>Membresia</th><th>Total Compras</th><th>Fecha Registro</th><th>Acciones</th></tr>
+                            </thead>
+                            <tbody id="customersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== MEMBERSHIPS SECTION ===== -->
+        <section class="admin-section" id="section-membresias">
+            <h1 class="page-title">Membresias</h1>
+
+            <!-- Overview -->
+            <div class="card" style="margin-bottom:20px">
+                <div class="card-header">Resumen de Membresias</div>
+                <div class="card-body">
+                    <div class="membership-stats-row">
+                        <div class="membership-stat">
+                            <div class="stat-value" style="color:#17a2b8">12</div>
+                            <div class="stat-label">Platino</div>
+                        </div>
+                        <div class="membership-stat">
+                            <div class="stat-value" style="color:#ffc107">28</div>
+                            <div class="stat-label">Oro</div>
+                        </div>
+                        <div class="membership-stat">
+                            <div class="stat-value" style="color:#6c757d">45</div>
+                            <div class="stat-label">Plata</div>
+                        </div>
+                        <div class="membership-stat">
+                            <div class="stat-value" style="color:#d95b00">67</div>
+                            <div class="stat-label">Bronce</div>
+                        </div>
+                        <div class="membership-stat" style="border:none">
+                            <div class="stat-value" style="color:var(--success)">$15,240</div>
+                            <div class="stat-label">Ingresos Membresias</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expiring Soon Alert -->
+            <div class="alert-panel">
+                <div class="alert-title"><i class="fas fa-clock"></i> Membresias por Vencer (proximos 30 dias)</div>
+                <ul>
+                    <li><i class="fas fa-exclamation-circle"></i> Maria Rodriguez - Oro - Vence: 15/04/2026</li>
+                    <li><i class="fas fa-exclamation-circle"></i> Pedro Martinez - Plata - Vence: 22/04/2026</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Cliente</th><th>Tipo</th><th>Fecha Inicio</th><th>Fecha Vencimiento</th><th>Estado</th><th>Acciones</th></tr></thead>
+                            <tbody id="membershipsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== REPORTS SECTION ===== -->
+        <section class="admin-section" id="section-reportes">
+            <h1 class="page-title">Reportes</h1>
+
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <label style="font-size:13px;margin-right:6px">Desde:</label>
+                    <input type="date" class="form-control" style="width:auto" id="reportDateFrom" value="2026-03-01">
+                    <label style="font-size:13px;margin:0 6px">Hasta:</label>
+                    <input type="date" class="form-control" style="width:auto" id="reportDateTo" value="2026-03-31">
+                    <button class="btn btn-primary btn-sm" onclick="generateReport()"><i class="fas fa-sync"></i> Generar</button>
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-outline btn-sm" onclick="exportReportCSV()"><i class="fas fa-file-export"></i> Exportar CSV</button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon blue"><i class="fas fa-calendar-day"></i></div>
+                    <div><div class="kpi-value">$2,847</div><div class="kpi-label">Ventas del Dia</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon orange"><i class="fas fa-calendar-week"></i></div>
+                    <div><div class="kpi-value">$18,523</div><div class="kpi-label">Ventas de la Semana</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon green"><i class="fas fa-calendar-alt"></i></div>
+                    <div><div class="kpi-value">$74,210</div><div class="kpi-label">Ventas del Mes</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon red"><i class="fas fa-receipt"></i></div>
+                    <div><div class="kpi-value">342</div><div class="kpi-label">Total Transacciones</div></div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">Tendencia de Ventas</div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="reportSalesChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Ventas por Departamento</div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="reportDeptChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">Ventas por Metodo de Pago</div>
+                <div class="card-body">
+                    <div class="chart-container" style="height:220px"><canvas id="reportPaymentChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Weekly Breakdown -->
+            <div class="card">
+                <div class="card-header">Desglose Semanal del Mes</div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Semana</th><th>Lun</th><th>Mar</th><th>Mie</th><th>Jue</th><th>Vie</th><th>Sab</th><th>Dom</th><th>Total</th></tr></thead>
+                            <tbody>
+                                <tr><td>Semana 1</td><td>$2,100</td><td>$2,450</td><td>$1,980</td><td>$2,800</td><td>$3,200</td><td>$4,100</td><td>$1,200</td><td><strong>$17,830</strong></td></tr>
+                                <tr><td>Semana 2</td><td>$2,300</td><td>$2,150</td><td>$2,400</td><td>$2,600</td><td>$3,500</td><td>$4,300</td><td>$1,273</td><td><strong>$18,523</strong></td></tr>
+                                <tr><td>Semana 3</td><td>$2,500</td><td>$2,700</td><td>$2,200</td><td>$2,900</td><td>$3,800</td><td>$4,500</td><td>$1,400</td><td><strong>$20,000</strong></td></tr>
+                                <tr><td>Semana 4</td><td>$2,400</td><td>$2,600</td><td>$2,300</td><td>$2,750</td><td>$3,400</td><td>$4,200</td><td>$1,207</td><td><strong>$18,857</strong></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== SETTINGS SECTION ===== -->
+        <section class="admin-section" id="section-configuracion">
+            <h1 class="page-title">Configuracion</h1>
+
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h4><i class="fas fa-building"></i> Informacion de la Empresa</h4>
+                    <div class="form-group"><label>Nombre de Empresa</label><input class="form-control" value="Empresas Centrales SA"></div>
+                    <div class="form-group"><label>RUC</label><input class="form-control" value="155-XXXXX-XX-XXXXXX"></div>
+                    <div class="form-group"><label>Telefono</label><input class="form-control" value="+507 6000-0000"></div>
+                    <div class="form-group"><label>Email</label><input class="form-control" value="info@empresascentrales.com"></div>
+                    <div class="form-group"><label>Direccion</label><textarea class="form-control" rows="2">Ciudad de Panama, Panama</textarea></div>
+                    <div class="form-group"><label>Sitio Web</label><input class="form-control" value="www.empresascentrales.com"></div>
+                    <button class="btn btn-primary" onclick="alert('Informacion guardada (demo)')"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+
+                <div class="settings-card">
+                    <h4><i class="fas fa-credit-card"></i> Metodos de Pago</h4>
+                    <div class="form-group">
+                        <div class="form-check"><input type="checkbox" checked><label>Tarjeta de Credito/Debito</label></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check"><input type="checkbox" checked><label>Transferencia Bancaria (ACH)</label></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check"><input type="checkbox" checked><label>Yappy</label></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check"><input type="checkbox" checked><label>Efectivo (contra entrega)</label></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check"><input type="checkbox"><label>PayPal</label></div>
+                    </div>
+                    <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border)">
+                    <h4><i class="fas fa-percent"></i> Impuestos</h4>
+                    <div class="form-group">
+                        <label>ITBMS (%)</label>
+                        <input class="form-control" type="number" value="7" step="0.1" style="width:120px">
+                    </div>
+                    <button class="btn btn-primary" onclick="alert('Configuracion guardada (demo)')"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+
+                <div class="settings-card">
+                    <h4><i class="fas fa-bell"></i> Notificaciones</h4>
+                    <div class="form-group">
+                        <div class="form-check"><input type="checkbox" checked><label>Notificar nuevos pedidos por email</label></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check"><input type="checkbox" checked><label>Alertas de stock bajo</label></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check"><input type="checkbox" checked><label>Membresias por vencer</label></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check"><input type="checkbox"><label>Resumen diario de ventas</label></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Stock minimo para alerta</label>
+                        <input class="form-control" type="number" value="5" style="width:120px">
+                    </div>
+                    <button class="btn btn-primary" onclick="alert('Notificaciones guardadas (demo)')"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+
+                <div class="settings-card">
+                    <h4><i class="fas fa-palette"></i> Apariencia</h4>
+                    <div class="form-group">
+                        <label>Color Primario</label>
+                        <input class="form-control" type="color" value="#2E9CDB" style="width:60px;height:36px;padding:2px">
+                    </div>
+                    <div class="form-group">
+                        <label>Color Secundario</label>
+                        <input class="form-control" type="color" value="#FF6B00" style="width:60px;height:36px;padding:2px">
+                    </div>
+                    <div class="form-group">
+                        <label>Moneda</label>
+                        <select class="form-control" style="width:auto">
+                            <option selected>USD ($)</option>
+                            <option>PAB (B/.)</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="alert('Apariencia guardada (demo)')"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== USERS & ROLES SECTION ===== -->
+        <section class="admin-section" id="section-usuarios">
+            <h1 class="page-title">Usuarios y Roles</h1>
+
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="search-input" placeholder="Buscar usuario..." id="userSearch" onkeyup="filterUsers()">
+                    </div>
+                    <select class="form-control" style="width:auto" id="filterUserRole" onchange="filterUsers()">
+                        <option value="">Todos los roles</option>
+                        <option value="admin">Admin</option>
+                        <option value="vendedor">Vendedor</option>
+                        <option value="cajero">Cajero</option>
+                        <option value="bodeguero">Bodeguero</option>
+                    </select>
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-primary" onclick="openModal('userModal'); resetUserForm()">
+                        <i class="fas fa-user-plus"></i> Nuevo Usuario
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Sucursal</th><th>Ultimo Acceso</th><th>Estado</th><th>Acciones</th></tr>
+                            </thead>
+                            <tbody id="usersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PRICE LISTS SECTION ===== -->
+        <section class="admin-section" id="section-precios">
+            <h1 class="page-title">Configuracion de Listas de Precios</h1>
+
+            <div class="card" style="margin-bottom:20px">
+                <div class="card-header"><span><i class="fas fa-percentage"></i> Margenes Globales (sobre el costo)</span></div>
+                <div class="card-body">
+                    <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Configure el porcentaje de margen sobre el costo para cada lista de precios. Al recalcular, todos los productos se actualizaran automaticamente.</p>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+                        <div class="form-group">
+                            <label style="font-weight:600;color:var(--text)">Lista 1 — Mostrador</label>
+                            <p style="font-size:11px;color:var(--text-light);margin-bottom:4px">Publico general (sin membresia)</p>
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <span style="font-size:13px">Costo +</span>
+                                <input class="form-control" type="number" id="margenLista1" value="35" style="width:80px" step="1" min="0">
+                                <span style="font-size:13px">%</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight:600;color:#8e44ad">Lista 2 — Platinium</label>
+                            <p style="font-size:11px;color:var(--text-light);margin-bottom:4px">Cliente membresia Platinium</p>
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <span style="font-size:13px">Costo +</span>
+                                <input class="form-control" type="number" id="margenLista2" value="32" style="width:80px" step="1" min="0">
+                                <span style="font-size:13px">%</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight:600;color:#f39c12">Lista 3 — Gold</label>
+                            <p style="font-size:11px;color:var(--text-light);margin-bottom:4px">Cliente membresia Gold</p>
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <span style="font-size:13px">Costo +</span>
+                                <input class="form-control" type="number" id="margenLista3" value="28" style="width:80px" step="1" min="0">
+                                <span style="font-size:13px">%</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight:600;color:#27ae60">Lista 4 — Premium</label>
+                            <p style="font-size:11px;color:var(--text-light);margin-bottom:4px">Cliente membresia Premium</p>
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <span style="font-size:13px">Costo +</span>
+                                <input class="form-control" type="number" id="margenLista4" value="22" style="width:80px" step="1" min="0">
+                                <span style="font-size:13px">%</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight:600;color:#2E9CDB">Lista 5 — Mayorista</label>
+                            <p style="font-size:11px;color:var(--text-light);margin-bottom:4px">Contratistas y mayoristas</p>
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <span style="font-size:13px">Costo +</span>
+                                <input class="form-control" type="number" id="margenLista5" value="15" style="width:80px" step="1" min="0">
+                                <span style="font-size:13px">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+                        <button class="btn btn-primary" onclick="guardarMargenes()"><i class="fas fa-save"></i> Guardar Margenes</button>
+                        <button class="btn btn-outline" onclick="recalcularTodosPrecios()" style="border-color:var(--secondary);color:var(--secondary)"><i class="fas fa-sync"></i> Recalcular TODOS los Precios</button>
+                    </div>
+
+                    <hr style="margin:20px 0;border:none;border-top:1px solid var(--border)">
+                    <h4 style="font-size:14px;margin-bottom:12px;color:var(--primary)"><i class="fas fa-file-excel"></i> Importacion / Exportacion Excel</h4>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap">
+                        <button class="btn btn-outline btn-sm" onclick="descargarPlantillaExcel()" style="border-color:var(--success);color:var(--success)"><i class="fas fa-download"></i> Descargar Plantilla Excel</button>
+                        <label class="btn btn-outline btn-sm" style="border-color:var(--primary);color:var(--primary);cursor:pointer;margin:0"><i class="fas fa-file-import"></i> Importar Excel de Precios <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" onchange="importarExcelPrecios(event)" style="display:none"></label>
+                        <button class="btn btn-outline btn-sm" onclick="exportarPreciosExcel()" style="border-color:var(--secondary);color:var(--secondary)"><i class="fas fa-file-export"></i> Exportar Precios a Excel</button>
+                    </div>
+
+                    <!-- Import Preview -->
+                    <div id="importPreview" style="display:none;margin-top:16px">
+                        <div class="card">
+                            <div class="card-header"><span><i class="fas fa-eye"></i> Vista Previa de Importacion</span><span id="importCount" style="font-size:12px;color:var(--text-light)"></span></div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table>
+                                        <thead><tr><th>SKU</th><th>Nombre</th><th>Costo</th><th>Mostrador</th><th>Platinium</th><th>Gold</th><th>Premium</th><th>Mayorista</th><th>Estado</th></tr></thead>
+                                        <tbody id="importPreviewBody"></tbody>
+                                    </table>
+                                </div>
+                                <div style="margin-top:12px;display:flex;gap:10px">
+                                    <button class="btn btn-primary" onclick="confirmarImportacion()"><i class="fas fa-check"></i> Confirmar Importacion</button>
+                                    <button class="btn btn-outline" onclick="cancelarImportacion()">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Preview Table -->
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-table"></i> Vista de Precios por Producto</span>
+                    <div style="display:flex;gap:8px">
+                        <input type="text" class="form-control" placeholder="Buscar producto..." id="precioSearch" onkeyup="filterPreciosTable()" style="width:200px;font-size:12px">
+                        <button class="btn btn-outline btn-sm" onclick="exportPreciosCSV()"><i class="fas fa-file-export"></i> Exportar</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>SKU</th><th>Producto</th><th>Costo</th>
+                                    <th style="color:var(--text)">Mostrador</th>
+                                    <th style="color:#8e44ad">Platinium</th>
+                                    <th style="color:#f39c12">Gold</th>
+                                    <th style="color:#27ae60">Premium</th>
+                                    <th style="color:#2E9CDB">Mayorista</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preciosTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div><!-- end page-content -->
+</div><!-- end main-content -->
+
+<!-- ===== PRODUCT MODAL ===== -->
+<div class="modal-overlay" id="productModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="productModalTitle">Nuevo Producto</h3>
+            <button class="modal-close" onclick="closeModal('productModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="productEditId">
+            <div class="form-row">
+                <div class="form-group"><label>Nombre del Producto *</label><input class="form-control" id="prodName" required></div>
+                <div class="form-group"><label>SKU *</label><input class="form-control" id="prodSKU"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Departamento *</label>
+                    <select class="form-control" id="prodDept">
+                        <option value="">Seleccionar...</option>
+                        <option>Alicates y Pinzas</option>
+                        <option>Aspiradoras</option>
+                        <option>Baterías y Cargadores</option>
+                        <option>Brocas y Accesorios</option>
+                        <option>Cepillos</option>
+                        <option>Cinceles y Formones</option>
+                        <option>Cortadores</option>
+                        <option>Discos Abrasivos</option>
+                        <option>Equipos de Soldadura</option>
+                        <option>Esmeriles</option>
+                        <option>Espátulas</option>
+                        <option>Herramientas Eléctricas</option>
+                        <option>Herramientas INGCO</option>
+                        <option>Herramientas de Albañilería</option>
+                        <option>Hidrolavadoras</option>
+                        <option>Lijadoras</option>
+                        <option>Lijas y Abrasivos</option>
+                        <option>Llaves y Destornilladores</option>
+                        <option>Martillos</option>
+                        <option>Medición</option>
+                        <option>Puntas de Destornillador</option>
+                        <option>Sierras</option>
+                        <option>Sopladoras</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Unidad</label>
+                    <select class="form-control" id="prodUnit">
+                        <option>Unidad</option>
+                        <option>Saco</option>
+                        <option>Galon</option>
+                        <option>Metro</option>
+                        <option>Rollo</option>
+                        <option>Caja</option>
+                        <option>Libra</option>
+                        <option>Pie</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Descripcion</label><textarea class="form-control" id="prodDesc" rows="2"></textarea></div>
+            <div class="form-row-3">
+                <div class="form-group"><label>Precio de Venta ($) *</label><input class="form-control" type="number" step="0.01" id="prodPrice"></div>
+                <div class="form-group"><label>Costo ($)</label><input class="form-control" type="number" step="0.01" id="prodCost"></div>
+                <div class="form-group"><label>Stock *</label><input class="form-control" type="number" id="prodStock"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Stock Minimo</label><input class="form-control" type="number" id="prodMinStock" value="5"></div>
+                <div class="form-group"><label>URL de Imagen</label><input class="form-control" id="prodImage" placeholder="https://..."></div>
+            </div>
+            <div class="form-group">
+                <div class="form-check"><input type="checkbox" id="prodFeatured"><label>Producto Destacado</label></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('productModal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveProduct()"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ORDER DETAIL MODAL ===== -->
+<div class="modal-overlay" id="orderDetailModal">
+    <div class="modal" style="max-width:750px">
+        <div class="modal-header">
+            <h3 id="orderDetailTitle">Detalle del Pedido</h3>
+            <button class="modal-close" onclick="closeModal('orderDetailModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="orderDetailBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('orderDetailModal')">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== CUSTOMER MODAL ===== -->
+<div class="modal-overlay" id="customerModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="customerModalTitle">Nuevo Cliente</h3>
+            <button class="modal-close" onclick="closeModal('customerModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="customerEditId">
+            <div class="form-row">
+                <div class="form-group"><label>Nombre Completo *</label><input class="form-control" id="custName"></div>
+                <div class="form-group"><label>Cedula / RUC</label><input class="form-control" id="custCedula"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Telefono</label><input class="form-control" id="custPhone"></div>
+                <div class="form-group"><label>Email</label><input class="form-control" id="custEmail" type="email"></div>
+            </div>
+            <div class="form-group"><label>Direccion</label><textarea class="form-control" id="custAddress" rows="2"></textarea></div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tipo de Membresia</label>
+                    <select class="form-control" id="custMembership">
+                        <option>Sin membresia</option>
+                        <option>Platinium</option>
+                        <option>Gold</option>
+                        <option>Premium</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Cliente</label>
+                    <select class="form-control" id="custTipo">
+                        <option value="residencial">Residencial</option>
+                        <option value="comercial">Comercial</option>
+                        <option value="contratista">Contratista</option>
+                        <option value="mayorista">Mayorista</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+            <h4 style="font-size:14px;margin-bottom:10px;color:var(--secondary)"><i class="fas fa-percent"></i> Descuento del Cliente <span style="font-size:11px;color:var(--text-light)">(Solo admin puede modificar)</span></h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tipo de Descuento</label>
+                    <select class="form-control" id="custDiscountType" onchange="toggleDiscountFields()">
+                        <option value="ninguno">Sin descuento (0%)</option>
+                        <option value="fijo">Descuento fijo %</option>
+                        <option value="por_categoria">Descuento por categoria</option>
+                    </select>
+                </div>
+                <div class="form-group" id="custDiscountFixedGroup" style="display:none">
+                    <label>Descuento Fijo (%)</label>
+                    <input class="form-control" type="number" step="0.5" min="0" max="50" id="custDiscountFixed" value="0" placeholder="Ej: 10">
+                </div>
+            </div>
+            <div id="custDiscountCategoryGroup" style="display:none;margin-bottom:12px">
+                <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block">Descuento por Categoria (%)</label>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                    <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;min-width:120px">PVC Interiores</span><input class="form-control" type="number" step="0.5" min="0" max="50" id="disc_pvc" value="0" style="width:70px"></div>
+                    <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;min-width:120px">Construccion</span><input class="form-control" type="number" step="0.5" min="0" max="50" id="disc_construccion" value="0" style="width:70px"></div>
+                    <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;min-width:120px">Herramientas</span><input class="form-control" type="number" step="0.5" min="0" max="50" id="disc_herramientas" value="0" style="width:70px"></div>
+                    <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;min-width:120px">Electricidad</span><input class="form-control" type="number" step="0.5" min="0" max="50" id="disc_electricidad" value="0" style="width:70px"></div>
+                    <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;min-width:120px">Pinturas</span><input class="form-control" type="number" step="0.5" min="0" max="50" id="disc_pinturas" value="0" style="width:70px"></div>
+                    <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;min-width:120px">Plomeria</span><input class="form-control" type="number" step="0.5" min="0" max="50" id="disc_plomeria" value="0" style="width:70px"></div>
+                </div>
+            </div>
+
+            <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Vendedor Asignado <span style="font-size:11px;color:var(--text-light)">(Solo admin)</span></label>
+                    <select class="form-control" id="custVendedor">
+                        <option value="">Sin vendedor (Cliente general)</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Fecha Registro</label><input class="form-control" type="date" id="custDate"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('customerModal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveCustomer()"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== CUSTOMER DETAIL MODAL ===== -->
+<div class="modal-overlay" id="customerDetailModal">
+    <div class="modal" style="max-width:650px">
+        <div class="modal-header">
+            <h3>Detalle del Cliente</h3>
+            <button class="modal-close" onclick="closeModal('customerDetailModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="customerDetailBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('customerDetailModal')">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== USER MODAL ===== -->
+<div class="modal-overlay" id="userModal">
+    <div class="modal" style="max-width:700px">
+        <div class="modal-header">
+            <h3 id="userModalTitle">Nuevo Usuario</h3>
+            <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="userEditId">
+            <div class="form-row">
+                <div class="form-group"><label>Nombre Completo *</label><input class="form-control" id="userName"></div>
+                <div class="form-group"><label>Email *</label><input class="form-control" type="email" id="userEmail"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Contrasena *</label><input class="form-control" type="password" id="userPassword" placeholder="Minimo 6 caracteres"></div>
+                <div class="form-group">
+                    <label>Rol *</label>
+                    <select class="form-control" id="userRole">
+                        <option value="vendedor">Vendedor</option>
+                        <option value="cajero">Cajero</option>
+                        <option value="bodeguero">Bodeguero</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Sucursal</label>
+                    <select class="form-control" id="userSucursal">
+                        <option>Principal - Arraijan</option>
+                        <option>Sucursal 2</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:4px">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                        <span>Estado Activo</span>
+                        <input type="checkbox" id="userActivo" checked style="width:18px;height:18px">
+                    </label>
+                </div>
+            </div>
+
+            <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
+            <h4 style="font-size:14px;margin-bottom:12px;color:var(--primary)"><i class="fas fa-key"></i> Permisos del Usuario</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="form-check"><input type="checkbox" id="perm_ver_reportes"><label>Ver reportes de ventas</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_ver_costos"><label>Ver costos de productos</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_descuentos"><label>Aplicar descuentos manuales</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_crear_productos"><label>Crear y editar productos</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_ver_bodega"><label>Ver inventario de bodega</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_devoluciones"><label>Procesar devoluciones</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_exportar"><label>Exportar datos a Excel</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_ver_otros"><label>Ver datos de otros vendedores</label></div>
+            </div>
+            <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+            <h4 style="font-size:13px;margin-bottom:10px;color:var(--secondary)"><i class="fas fa-cash-register"></i> Permisos de Cobro</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="form-check"><input type="checkbox" id="perm_cobro_yappy"><label>Procesar cobros con Yappy</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_cobro_tarjeta"><label>Procesar cobros con Tarjeta</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_cobro_transferencia"><label>Procesar cobros con Transferencia</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_cobro_efectivo"><label>Procesar cobros en Efectivo</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_historial_cobros"><label>Ver historial de cobros del dia</label></div>
+                <div class="form-check"><input type="checkbox" id="perm_cierre_caja"><label>Realizar cierre de caja</label></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('userModal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveUser()"><i class="fas fa-save"></i> Guardar Usuario</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== PRICE EDIT MODAL ===== -->
+<div class="modal-overlay" id="priceEditModal">
+    <div class="modal" style="max-width:500px">
+        <div class="modal-header">
+            <h3>Editar Precios del Producto</h3>
+            <button class="modal-close" onclick="closeModal('priceEditModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="priceEditProductId">
+            <p style="font-weight:600;margin-bottom:12px" id="priceEditProductName"></p>
+            <div class="form-group"><label>Precio Costo</label><input class="form-control" type="number" step="0.01" id="priceEditCosto" onchange="previewPriceCalc()"></div>
+            <div class="form-group"><label>Precio Mostrador (Lista 1)</label><input class="form-control" type="number" step="0.01" id="priceEditL1"></div>
+            <div class="form-group"><label>Precio Platinium (Lista 2)</label><input class="form-control" type="number" step="0.01" id="priceEditL2"></div>
+            <div class="form-group"><label>Precio Gold (Lista 3)</label><input class="form-control" type="number" step="0.01" id="priceEditL3"></div>
+            <div class="form-group"><label>Precio Premium (Lista 4)</label><input class="form-control" type="number" step="0.01" id="priceEditL4"></div>
+            <div class="form-group"><label>Precio Mayorista (Lista 5)</label><input class="form-control" type="number" step="0.01" id="priceEditL5"></div>
+            <button class="btn btn-outline btn-sm" onclick="recalcularProductoIndividual()" style="margin-bottom:12px"><i class="fas fa-sync"></i> Recalcular desde costo</button>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('priceEditModal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="savePriceEdit()"><i class="fas fa-save"></i> Guardar Precios</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== DELETE CONFIRMATION MODAL ===== -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="max-width:420px">
+        <div class="modal-header">
+            <h3>Confirmar Eliminacion</h3>
+            <button class="modal-close" onclick="closeModal('deleteModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="text-align:center;margin:10px 0">
+                <i class="fas fa-exclamation-triangle" style="font-size:40px;color:var(--warning)"></i>
+            </p>
+            <p style="text-align:center" id="deleteMessage">Esta seguro de que desea eliminar este elemento?</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('deleteModal')">Cancelar</button>
+            <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()"><i class="fas fa-trash"></i> Eliminar</button>
+        </div>
+    </div>
+</div>
+
+<!-- External Scripts -->
+<link rel="stylesheet" href="styles.css">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+
+<!-- ECSA Modules -->
+<script src="firebase-config.js"></script>
+<script src="inventario.js"></script>
+<script src="pagos.js"></script>
+<script src="clientes.js"></script>
+<script src="reportes.js"></script>
+
+<script>
+// ===== DEMO DATA =====
+let demoProducts = [
+    { id: 1, sku: 'MC-001', name: 'Cemento Gris Portland', dept: 'Materiales de Construccion', price: 12.50, cost: 8.75, stock: 3, minStock: 10, unit: 'Saco', status: 'activo', featured: true, desc: 'Cemento gris de alta resistencia 42.5 kg' },
+    { id: 2, sku: 'HM-001', name: 'Martillo de Carpintero 16oz', dept: 'Herramientas Manuales', price: 14.99, cost: 8.50, stock: 25, minStock: 5, unit: 'Unidad', status: 'activo', featured: false, desc: 'Mango de fibra de vidrio' },
+    { id: 3, sku: 'HE-001', name: 'Taladro Percutor DeWalt 20V', dept: 'Herramientas Electricas', price: 189.99, cost: 125.00, stock: 8, minStock: 3, unit: 'Unidad', status: 'activo', featured: true, desc: 'Incluye 2 baterias y maletin' },
+    { id: 4, sku: 'PL-001', name: 'Tubo PVC 1/2" x 6m', dept: 'Plomeria', price: 3.25, cost: 1.80, stock: 150, minStock: 20, unit: 'Unidad', status: 'activo', featured: false, desc: 'Presion 315 PSI' },
+    { id: 5, sku: 'EL-001', name: 'Cable THHN #12 AWG', dept: 'Electricidad', price: 0.45, cost: 0.28, stock: 2000, minStock: 500, unit: 'Pie', status: 'activo', featured: false, desc: 'Color negro, 600V' },
+    { id: 6, sku: 'PI-001', name: 'Pintura Latex Blanca Glidden', dept: 'Pinturas', price: 32.99, cost: 22.00, stock: 4, minStock: 8, unit: 'Galon', status: 'activo', featured: true, desc: 'Interior/Exterior, acabado mate' },
+    { id: 7, sku: 'JA-001', name: 'Manguera de Jardin 50ft', dept: 'Jardineria', price: 24.99, cost: 14.50, stock: 15, minStock: 5, unit: 'Unidad', status: 'activo', featured: false, desc: 'Reforzada 3 capas' },
+    { id: 8, sku: 'FG-001', name: 'Candado Yale 50mm', dept: 'Ferreteria General', price: 18.99, cost: 11.00, stock: 30, minStock: 10, unit: 'Unidad', status: 'activo', featured: false, desc: 'Acero endurecido, 3 llaves' },
+    { id: 9, sku: 'MC-002', name: 'Varilla Corrugada 3/8" x 6m', dept: 'Materiales de Construccion', price: 4.75, cost: 3.20, stock: 2, minStock: 15, unit: 'Unidad', status: 'activo', featured: false, desc: 'Grado 60' },
+    { id: 10, sku: 'HM-002', name: 'Juego de Llaves Allen 9pcs', dept: 'Herramientas Manuales', price: 8.99, cost: 4.50, stock: 40, minStock: 10, unit: 'Unidad', status: 'activo', featured: false, desc: 'Cromo vanadio, 1.5mm-10mm' },
+    { id: 11, sku: 'EL-002', name: 'Breaker 20A 1 Polo', dept: 'Electricidad', price: 6.75, cost: 3.80, stock: 1, minStock: 10, unit: 'Unidad', status: 'activo', featured: false, desc: 'Termomagnetico' },
+    { id: 12, sku: 'PI-002', name: 'Rodillo de Pintura 9"', dept: 'Pinturas', price: 7.50, cost: 3.75, stock: 22, minStock: 8, unit: 'Unidad', status: 'activo', featured: false, desc: 'Pelo mediano, para latex' },
+];
+
+let demoOrders = [
+    { id: 'PED-001', date: '2026-03-31', customer: 'Juan Perez', total: 245.80, status: 'entregado', payment: 'Tarjeta de Credito', items: [{name:'Cemento Gris Portland',qty:10,price:12.50},{name:'Varilla Corrugada 3/8"',qty:20,price:4.75}], address: 'Calle 50, Bella Vista, Panama', phone: '+507 6123-4567' },
+    { id: 'PED-002', date: '2026-03-31', customer: 'Maria Rodriguez', total: 189.99, status: 'procesando', payment: 'Yappy', items: [{name:'Taladro Percutor DeWalt 20V',qty:1,price:189.99}], address: 'Via Espana, El Cangrejo', phone: '+507 6234-5678' },
+    { id: 'PED-003', date: '2026-03-30', customer: 'Carlos Gomez', total: 78.46, status: 'pendiente', payment: 'Transferencia ACH', items: [{name:'Pintura Latex Blanca',qty:2,price:32.99},{name:'Rodillo de Pintura 9"',qty:1,price:7.50},{name:'Manguera de Jardin',qty:0,price:0}], address: 'San Francisco, Panama', phone: '+507 6345-6789' },
+    { id: 'PED-004', date: '2026-03-30', customer: 'Ana Lopez', total: 156.25, status: 'enviado', payment: 'Tarjeta de Credito', items: [{name:'Cable THHN #12',qty:200,price:0.45},{name:'Breaker 20A',qty:5,price:6.75},{name:'Candado Yale',qty:2,price:18.99}], address: 'Betania, Panama', phone: '+507 6456-7890' },
+    { id: 'PED-005', date: '2026-03-29', customer: 'Pedro Martinez', total: 432.50, status: 'entregado', payment: 'Efectivo', items: [{name:'Cemento Gris Portland',qty:20,price:12.50},{name:'Varilla Corrugada',qty:30,price:4.75},{name:'Tubo PVC 1/2"',qty:20,price:3.25}], address: 'Chorrera, Panama Oeste', phone: '+507 6567-8901' },
+    { id: 'PED-006', date: '2026-03-29', customer: 'Laura Castillo', total: 67.97, status: 'cancelado', payment: 'Yappy', items: [{name:'Martillo Carpintero',qty:1,price:14.99},{name:'Llaves Allen 9pcs',qty:2,price:8.99},{name:'Pintura Latex Blanca',qty:1,price:32.99}], address: 'Costa del Este', phone: '+507 6678-9012' },
+    { id: 'PED-007', date: '2026-03-28', customer: 'Roberto Diaz', total: 324.90, status: 'pendiente', payment: 'Tarjeta de Credito', items: [{name:'Taladro Percutor DeWalt',qty:1,price:189.99},{name:'Candado Yale',qty:3,price:18.99},{name:'Manguera Jardin',qty:2,price:24.99}], address: '24 de Diciembre', phone: '+507 6789-0123' },
+    { id: 'PED-008', date: '2026-03-28', customer: 'Sofia Herrera', total: 95.40, status: 'pendiente', payment: 'Transferencia ACH', items: [{name:'Tubo PVC 1/2"',qty:20,price:3.25},{name:'Martillo Carpintero',qty:2,price:14.99}], address: 'Parque Lefevre', phone: '+507 6890-1234' },
+];
+
+let demoCustomers = [
+    { id: 1, name: 'Juan Perez', cedula: '8-123-4567', phone: '+507 6123-4567', email: 'juan.perez@email.com', membership: 'Oro', totalPurchases: 4520.80, regDate: '2024-03-15', address: 'Calle 50, Bella Vista' },
+    { id: 2, name: 'Maria Rodriguez', cedula: '3-456-7890', phone: '+507 6234-5678', email: 'maria.rod@email.com', membership: 'Platino', totalPurchases: 12350.00, regDate: '2023-08-20', address: 'Via Espana, El Cangrejo' },
+    { id: 3, name: 'Carlos Gomez', cedula: '8-789-0123', phone: '+507 6345-6789', email: 'cgomez@email.com', membership: 'Plata', totalPurchases: 1890.45, regDate: '2025-01-10', address: 'San Francisco' },
+    { id: 4, name: 'Ana Lopez', cedula: '4-012-3456', phone: '+507 6456-7890', email: 'alopez@email.com', membership: 'Bronce', totalPurchases: 756.20, regDate: '2025-06-05', address: 'Betania, Panama' },
+    { id: 5, name: 'Pedro Martinez', cedula: '8-345-6789', phone: '+507 6567-8901', email: 'pmartinez@email.com', membership: 'Oro', totalPurchases: 8920.30, regDate: '2024-01-22', address: 'Chorrera, Panama Oeste' },
+    { id: 6, name: 'Laura Castillo', cedula: '9-678-9012', phone: '+507 6678-9012', email: 'lcastillo@email.com', membership: 'Sin membresia', totalPurchases: 234.50, regDate: '2025-11-18', address: 'Costa del Este' },
+    { id: 7, name: 'Roberto Diaz', cedula: '8-901-2345', phone: '+507 6789-0123', email: 'rdiaz@email.com', membership: 'Plata', totalPurchases: 3150.00, regDate: '2024-07-09', address: '24 de Diciembre' },
+    { id: 8, name: 'Sofia Herrera', cedula: '2-234-5678', phone: '+507 6890-1234', email: 'sherrera@email.com', membership: 'Bronce', totalPurchases: 980.75, regDate: '2025-04-12', address: 'Parque Lefevre' },
+];
+
+let demoMemberships = [
+    { customer: 'Maria Rodriguez', type: 'Platino', startDate: '2025-04-15', endDate: '2026-04-15', status: 'activo' },
+    { customer: 'Juan Perez', type: 'Oro', startDate: '2025-06-01', endDate: '2026-06-01', status: 'activo' },
+    { customer: 'Pedro Martinez', type: 'Oro', startDate: '2025-07-10', endDate: '2026-07-10', status: 'activo' },
+    { customer: 'Carlos Gomez', type: 'Plata', startDate: '2025-09-01', endDate: '2026-09-01', status: 'activo' },
+    { customer: 'Roberto Diaz', type: 'Plata', startDate: '2025-08-15', endDate: '2026-08-15', status: 'activo' },
+    { customer: 'Ana Lopez', type: 'Bronce', startDate: '2025-12-01', endDate: '2026-12-01', status: 'activo' },
+    { customer: 'Sofia Herrera', type: 'Bronce', startDate: '2026-01-10', endDate: '2027-01-10', status: 'activo' },
+    { customer: 'Fernando Rios', type: 'Oro', startDate: '2024-05-01', endDate: '2025-05-01', status: 'vencida' },
+];
+
+let deleteCallback = null;
+
+// ===== SECTION SWITCHING =====
+function switchSection(sectionId) {
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById('section-' + sectionId).classList.add('active');
+    document.querySelector(`.sidebar-nav a[data-section="${sectionId}"]`).classList.add('active');
+    // Close mobile sidebar
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('mobileOverlay').classList.remove('active');
+}
+
+document.querySelectorAll('.sidebar-nav a[data-section]').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchSection(link.dataset.section);
+    });
+});
+
+// ===== SIDEBAR TOGGLE =====
+function toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    if (window.innerWidth <= 768) {
+        sb.classList.toggle('mobile-open');
+        document.getElementById('mobileOverlay').classList.toggle('active');
+    } else {
+        sb.classList.toggle('collapsed');
+    }
+}
+function toggleSidebarMobile() {
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('mobileOverlay').classList.remove('active');
+}
+
+// ===== MODAL MANAGEMENT =====
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('active');
+    });
+});
+
+// ===== NOTIFICATIONS =====
+function toggleNotifications() {
+    document.getElementById('notifDropdown').classList.toggle('show');
+}
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.topbar-notif') && !e.target.closest('.notif-dropdown')) {
+        document.getElementById('notifDropdown').classList.remove('show');
+    }
+});
+
+// ===== GLOBAL SEARCH =====
+function handleGlobalSearch(e) {
+    if (e.key === 'Enter') {
+        const q = e.target.value.toLowerCase().trim();
+        if (!q) return;
+        // Search products first
+        const found = demoProducts.find(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
+        if (found) { switchSection('inventario'); document.getElementById('productSearch').value = q; filterProducts(); return; }
+        const foundOrder = demoOrders.find(o => o.id.toLowerCase().includes(q) || o.customer.toLowerCase().includes(q));
+        if (foundOrder) { switchSection('pedidos'); document.getElementById('orderSearch').value = q; filterOrders(); return; }
+        const foundCust = demoCustomers.find(c => c.name.toLowerCase().includes(q) || c.cedula.includes(q));
+        if (foundCust) { switchSection('clientes'); document.getElementById('customerSearch').value = q; filterCustomers(); return; }
+        alert('No se encontraron resultados para: ' + q);
+    }
+}
+
+// ===== PRODUCT TABLE =====
+function renderProducts(products) {
+    const tbody = document.getElementById('productsTableBody');
+    if (!products) products = demoProducts;
+    tbody.innerHTML = products.map(p => {
+        const stockClass = p.stock <= p.minStock ? 'bajo' : 'activo';
+        const statusLabel = p.status === 'activo' ? 'Activo' : 'Inactivo';
+        return `<tr>
+            <td><input type="checkbox" class="product-check" data-id="${p.id}"></td>
+            <td><code>${p.sku}</code></td>
+            <td><div class="product-img-thumb"><i class="fas fa-box-open"></i></div></td>
+            <td><strong>${p.name}</strong>${p.featured ? ' <i class="fas fa-star" style="color:#ffc107;font-size:11px"></i>' : ''}<br><span class="text-muted">${p.desc || ''}</span></td>
+            <td>${p.dept}</td>
+            <td><strong>$${p.price.toFixed(2)}</strong></td>
+            <td>$${p.cost.toFixed(2)}</td>
+            <td><span class="badge-status ${p.stock <= p.minStock ? 'bajo' : 'activo'}">${p.stock} ${p.unit}</span></td>
+            <td><span class="badge-status ${p.status}">${statusLabel}</span></td>
+            <td>
+                <button class="btn-icon" onclick="editProduct(${p.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                <button class="btn-icon delete" onclick="deleteProduct(${p.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function filterProducts() {
+    const search = document.getElementById('productSearch').value.toLowerCase();
+    const dept = document.getElementById('filterDept').value;
+    let filtered = demoProducts.filter(p => {
+        const matchSearch = !search || p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search);
+        const matchDept = !dept || p.dept === dept;
+        return matchSearch && matchDept;
+    });
+    renderProducts(filtered);
+}
+
+function resetProductForm() {
+    document.getElementById('productModalTitle').textContent = 'Nuevo Producto';
+    document.getElementById('productEditId').value = '';
+    ['prodName','prodSKU','prodDesc','prodPrice','prodCost','prodStock','prodImage'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('prodDept').value = '';
+    document.getElementById('prodUnit').value = 'Unidad';
+    document.getElementById('prodMinStock').value = '5';
+    document.getElementById('prodFeatured').checked = false;
+}
+
+function editProduct(id) {
+    const p = demoProducts.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('productModalTitle').textContent = 'Editar Producto';
+    document.getElementById('productEditId').value = p.id;
+    document.getElementById('prodName').value = p.name;
+    document.getElementById('prodSKU').value = p.sku;
+    document.getElementById('prodDept').value = p.dept;
+    document.getElementById('prodDesc').value = p.desc || '';
+    document.getElementById('prodPrice').value = p.price;
+    document.getElementById('prodCost').value = p.cost;
+    document.getElementById('prodStock').value = p.stock;
+    document.getElementById('prodMinStock').value = p.minStock;
+    document.getElementById('prodUnit').value = p.unit;
+    document.getElementById('prodFeatured').checked = p.featured;
+    openModal('productModal');
+}
+
+function saveProduct() {
+    const name = document.getElementById('prodName').value.trim();
+    const sku = document.getElementById('prodSKU').value.trim();
+    const dept = document.getElementById('prodDept').value;
+    const price = parseFloat(document.getElementById('prodPrice').value);
+    const stock = parseInt(document.getElementById('prodStock').value);
+    if (!name || !sku || !dept || isNaN(price) || isNaN(stock)) {
+        alert('Complete todos los campos obligatorios (*)');
+        return;
+    }
+    const editId = document.getElementById('productEditId').value;
+    const data = {
+        name, sku, dept, price,
+        cost: parseFloat(document.getElementById('prodCost').value) || 0,
+        stock,
+        minStock: parseInt(document.getElementById('prodMinStock').value) || 5,
+        unit: document.getElementById('prodUnit').value,
+        desc: document.getElementById('prodDesc').value,
+        featured: document.getElementById('prodFeatured').checked,
+        status: 'activo'
+    };
+    if (editId) {
+        const idx = demoProducts.findIndex(p => p.id == editId);
+        if (idx >= 0) { demoProducts[idx] = { ...demoProducts[idx], ...data }; }
+    } else {
+        data.id = Math.max(...demoProducts.map(p => p.id)) + 1;
+        demoProducts.push(data);
+    }
+    closeModal('productModal');
+    renderProducts();
+    renderLowStockAlerts();
+    alert('Producto guardado correctamente');
+}
+
+function deleteProduct(id) {
+    document.getElementById('deleteMessage').textContent = 'Esta seguro de que desea eliminar este producto? Esta accion no se puede deshacer.';
+    deleteCallback = () => {
+        demoProducts = demoProducts.filter(p => p.id !== id);
+        renderProducts();
+        renderLowStockAlerts();
+    };
+    openModal('deleteModal');
+}
+
+function confirmDelete() {
+    if (deleteCallback) { deleteCallback(); deleteCallback = null; }
+    closeModal('deleteModal');
+}
+
+function toggleSelectAll(el, type) {
+    document.querySelectorAll(`.${type}-check`).forEach(cb => cb.checked = el.checked);
+}
+
+function executeBulkAction() {
+    const action = document.getElementById('bulkAction').value;
+    if (!action) return;
+    const selected = [...document.querySelectorAll('.product-check:checked')].map(cb => parseInt(cb.dataset.id));
+    if (!selected.length) { alert('Seleccione al menos un producto'); return; }
+    if (action === 'delete') {
+        if (!confirm('Eliminar ' + selected.length + ' productos?')) return;
+        demoProducts = demoProducts.filter(p => !selected.includes(p.id));
+    } else if (action === 'activate') {
+        demoProducts.forEach(p => { if (selected.includes(p.id)) p.status = 'activo'; });
+    } else if (action === 'deactivate') {
+        demoProducts.forEach(p => { if (selected.includes(p.id)) p.status = 'inactivo'; });
+    }
+    document.getElementById('bulkAction').value = '';
+    renderProducts();
+    renderLowStockAlerts();
+}
+
+function renderLowStockAlerts() {
+    const low = demoProducts.filter(p => p.stock <= p.minStock && p.status === 'activo');
+    const el = document.getElementById('lowStockList');
+    if (low.length === 0) {
+        document.getElementById('lowStockAlert').style.display = 'none';
+        return;
+    }
+    document.getElementById('lowStockAlert').style.display = 'block';
+    el.innerHTML = low.map(p => `<li><i class="fas fa-exclamation-circle"></i> <strong>${p.name}</strong> (${p.sku}) - Stock: ${p.stock} ${p.unit} (Min: ${p.minStock})</li>`).join('');
+}
+
+function exportProductsCSV() {
+    let csv = 'SKU,Nombre,Departamento,Precio,Costo,Stock,Unidad,Estado\n';
+    demoProducts.forEach(p => { csv += `${p.sku},"${p.name}",${p.dept},${p.price},${p.cost},${p.stock},${p.unit},${p.status}\n`; });
+
+    downloadCSV(csv, 'productos_ecsa.csv');
+}
+
+function importProductsCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const lines = e.target.result.split('\n').filter(l => l.trim());
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        let imported = 0, errors = 0;
+        const idxSKU  = headers.findIndex(h => h.includes('sku'));
+        const idxNom  = headers.findIndex(h => h.includes('nombre') || h.includes('name'));
+        const idxDept = headers.findIndex(h => h.includes('departamento') || h.includes('dept') || h.includes('categoria'));
+        const idxPrc  = headers.findIndex(h => h.includes('precio') || h.includes('price'));
+        const idxCst  = headers.findIndex(h => h.includes('costo') || h.includes('cost'));
+        const idxStk  = headers.findIndex(h => h.includes('stock'));
+        const idxUnit = headers.findIndex(h => h.includes('unidad') || h.includes('unit'));
+        const idxStat = headers.findIndex(h => h.includes('estado') || h.includes('status'));
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$|^(?=,))/g) || lines[i].split(',');
+            const clean = cols.map(c => c ? c.replace(/^"|"$/g,'').trim() : '');
+            const sku  = idxSKU  >= 0 ? clean[idxSKU]  : '';
+            const name = idxNom  >= 0 ? clean[idxNom]  : '';
+            const dept = idxDept >= 0 ? clean[idxDept] : 'Herramientas INGCO';
+            const price= idxPrc  >= 0 ? parseFloat(clean[idxPrc])  || 0 : 0;
+            const cost = idxCst  >= 0 ? parseFloat(clean[idxCst])  || 0 : 0;
+            const stock= idxStk  >= 0 ? parseInt(clean[idxStk])    || 0 : 0;
+            const unit = idxUnit >= 0 ? clean[idxUnit] : 'Unidad';
+            const stat = idxStat >= 0 ? clean[idxStat] : 'activo';
+            if (!sku || !name) { errors++; continue; }
+            const existing = demoProducts.findIndex(p => p.sku === sku);
+            const prod = {
+                id: existing >= 0 ? demoProducts[existing].id : (Math.max(0,...demoProducts.map(p=>p.id)) + imported + 1),
+                sku, name, dept, price, cost, stock,
+                minStock: Math.max(1, Math.floor(stock * 0.1)),
+                unit: unit || 'Unidad',
+                status: (stat === 'active' || stat === 'activo') ? 'activo' : 'inactivo',
+                featured: false, desc: ''
+            };
+            if (existing >= 0) { demoProducts[existing] = prod; }
+            else { demoProducts.push(prod); }
+            imported++;
+        }
+        event.target.value = '';
+        renderProducts();
+        renderDashboard();
+        alert(`✅ Importación completa:\n• ${imported} productos importados/actualizados\n• ${errors} filas con error (SKU o Nombre vacío)`);
+    };
+    reader.readAsText(file, 'UTF-8');
+}
+
+// ===== ORDERS TABLE =====
+function renderOrders(orders) {
+    if (!orders) orders = demoOrders;
+    const tbody = document.getElementById('ordersTableBody');
+    tbody.innerHTML = orders.map(o => `<tr>
+        <td><strong>${o.id}</strong></td>
+        <td>${formatDate(o.date)}</td>
+        <td>${o.customer}</td>
+        <td><strong>$${o.total.toFixed(2)}</strong></td>
+        <td><span class="badge-status ${o.status}">${capitalize(o.status)}</span></td>
+        <td>${o.payment}</td>
+        <td>
+            <button class="btn-icon" onclick="viewOrderDetail('${o.id}')" title="Ver detalle"><i class="fas fa-eye"></i></button>
+            <select class="form-control" style="width:auto;font-size:11px;padding:3px 6px;display:inline-block" onchange="updateOrderStatus('${o.id}',this.value)">
+                <option value="pendiente" ${o.status==='pendiente'?'selected':''}>Pendiente</option>
+                <option value="procesando" ${o.status==='procesando'?'selected':''}>Procesando</option>
+                <option value="enviado" ${o.status==='enviado'?'selected':''}>Enviado</option>
+                <option value="entregado" ${o.status==='entregado'?'selected':''}>Entregado</option>
+                <option value="cancelado" ${o.status==='cancelado'?'selected':''}>Cancelado</option>
+            </select>
+        </td>
+    </tr>`).join('');
+}
+
+function filterOrders() {
+    const search = document.getElementById('orderSearch').value.toLowerCase();
+    const status = document.getElementById('filterOrderStatus').value;
+    const from = document.getElementById('filterDateFrom').value;
+    const to = document.getElementById('filterDateTo').value;
+    let filtered = demoOrders.filter(o => {
+        const matchSearch = !search || o.id.toLowerCase().includes(search) || o.customer.toLowerCase().includes(search);
+        const matchStatus = !status || o.status === status;
+        const matchFrom = !from || o.date >= from;
+        const matchTo = !to || o.date <= to;
+        return matchSearch && matchStatus && matchFrom && matchTo;
+    });
+    renderOrders(filtered);
+}
+
+function viewOrderDetail(id) {
+    const o = demoOrders.find(x => x.id === id);
+    if (!o) return;
+    document.getElementById('orderDetailTitle').textContent = 'Pedido ' + o.id;
+    const subtotal = o.items.reduce((s,i) => s + i.qty * i.price, 0);
+    const tax = subtotal * 0.07;
+    document.getElementById('orderDetailBody').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px">
+            <div>
+                <h4 style="font-size:14px;margin-bottom:8px;color:var(--primary)"><i class="fas fa-user"></i> Cliente</h4>
+                <p style="font-size:13px"><strong>${o.customer}</strong><br>${o.phone}<br>${o.address}</p>
+            </div>
+            <div>
+                <h4 style="font-size:14px;margin-bottom:8px;color:var(--primary)"><i class="fas fa-info-circle"></i> Informacion</h4>
+                <p style="font-size:13px">Fecha: ${formatDate(o.date)}<br>Estado: <span class="badge-status ${o.status}">${capitalize(o.status)}</span><br>Pago: ${o.payment}</p>
+            </div>
+        </div>
+        <h4 style="font-size:14px;margin-bottom:8px;color:var(--primary)"><i class="fas fa-list"></i> Productos</h4>
+        <table style="margin-bottom:16px">
+            <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead>
+            <tbody>
+                ${o.items.filter(i => i.qty > 0).map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>$${i.price.toFixed(2)}</td><td>$${(i.qty*i.price).toFixed(2)}</td></tr>`).join('')}
+            </tbody>
+        </table>
+        <div style="text-align:right;font-size:13px">
+            <p>Subtotal: <strong>$${subtotal.toFixed(2)}</strong></p>
+            <p>ITBMS (7%): <strong>$${tax.toFixed(2)}</strong></p>
+            <p style="font-size:16px;color:var(--primary)">Total: <strong>$${(subtotal+tax).toFixed(2)}</strong></p>
+        </div>`;
+    openModal('orderDetailModal');
+}
+
+function updateOrderStatus(id, newStatus) {
+    const o = demoOrders.find(x => x.id === id);
+    if (o) { o.status = newStatus; renderDashRecentOrders(); }
+}
+
+// ===== CUSTOMERS TABLE =====
+function renderCustomers(customers) {
+    if (!customers) customers = demoCustomers;
+    const tbody = document.getElementById('customersTableBody');
+    tbody.innerHTML = customers.map(c => {
+        const mClass = c.membership.toLowerCase().replace(' ', '').replace('sinmembresia','inactivo');
+        return `<tr>
+            <td><strong>${c.name}</strong></td>
+            <td>${c.cedula}</td>
+            <td>${c.phone}</td>
+            <td>${c.email}</td>
+            <td><span class="badge-status ${mClass}">${c.membership}</span></td>
+            <td><strong>$${c.totalPurchases.toFixed(2)}</strong></td>
+            <td>${formatDate(c.regDate)}</td>
+            <td>
+                <button class="btn-icon" onclick="viewCustomerDetail(${c.id})" title="Ver"><i class="fas fa-eye"></i></button>
+                <button class="btn-icon" onclick="editCustomer(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                <button class="btn-icon delete" onclick="deleteCustomer(${c.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function filterCustomers() {
+    const search = document.getElementById('customerSearch').value.toLowerCase();
+    const membership = document.getElementById('filterMembership').value;
+    let filtered = demoCustomers.filter(c => {
+        const matchSearch = !search || c.name.toLowerCase().includes(search) || c.cedula.includes(search) || c.email.toLowerCase().includes(search);
+        const matchMembership = !membership || c.membership === membership;
+        return matchSearch && matchMembership;
+    });
+    renderCustomers(filtered);
+}
+
+function resetCustomerForm() {
+    document.getElementById('customerModalTitle').textContent = 'Nuevo Cliente';
+    document.getElementById('customerEditId').value = '';
+    ['custName','custCedula','custPhone','custEmail','custAddress','custDate'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('custMembership').value = 'Sin membresia';
+}
+
+function editCustomer(id) {
+    const c = demoCustomers.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('customerModalTitle').textContent = 'Editar Cliente';
+    document.getElementById('customerEditId').value = c.id;
+    document.getElementById('custName').value = c.name;
+    document.getElementById('custCedula').value = c.cedula;
+    document.getElementById('custPhone').value = c.phone;
+    document.getElementById('custEmail').value = c.email;
+    document.getElementById('custAddress').value = c.address || '';
+    document.getElementById('custMembership').value = c.membership;
+    document.getElementById('custDate').value = c.regDate;
+    openModal('customerModal');
+}
+
+function saveCustomer() {
+    const name = document.getElementById('custName').value.trim();
+    if (!name) { alert('Ingrese el nombre del cliente'); return; }
+    const editId = document.getElementById('customerEditId').value;
+    const data = {
+        name,
+        cedula: document.getElementById('custCedula').value,
+        phone: document.getElementById('custPhone').value,
+        email: document.getElementById('custEmail').value,
+        address: document.getElementById('custAddress').value,
+        membership: document.getElementById('custMembership').value,
+        regDate: document.getElementById('custDate').value || new Date().toISOString().split('T')[0],
+        totalPurchases: 0
+    };
+    if (editId) {
+        const idx = demoCustomers.findIndex(c => c.id == editId);
+        if (idx >= 0) { data.totalPurchases = demoCustomers[idx].totalPurchases; demoCustomers[idx] = { ...demoCustomers[idx], ...data }; }
+    } else {
+        data.id = Math.max(...demoCustomers.map(c => c.id)) + 1;
+        demoCustomers.push(data);
+    }
+    closeModal('customerModal');
+    renderCustomers();
+    alert('Cliente guardado correctamente');
+}
+
+function deleteCustomer(id) {
+    document.getElementById('deleteMessage').textContent = 'Esta seguro de que desea eliminar este cliente?';
+    deleteCallback = () => {
+        demoCustomers = demoCustomers.filter(c => c.id !== id);
+        renderCustomers();
+    };
+    openModal('deleteModal');
+}
+
+function viewCustomerDetail(id) {
+    const c = demoCustomers.find(x => x.id === id);
+    if (!c) return;
+    const custOrders = demoOrders.filter(o => o.customer === c.name);
+    document.getElementById('customerDetailBody').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+            <div>
+                <p style="font-size:13px"><strong>Nombre:</strong> ${c.name}</p>
+                <p style="font-size:13px"><strong>Cedula:</strong> ${c.cedula}</p>
+                <p style="font-size:13px"><strong>Telefono:</strong> ${c.phone}</p>
+                <p style="font-size:13px"><strong>Email:</strong> ${c.email}</p>
+            </div>
+            <div>
+                <p style="font-size:13px"><strong>Membresia:</strong> <span class="badge-status ${c.membership.toLowerCase()}">${c.membership}</span></p>
+                <p style="font-size:13px"><strong>Total Compras:</strong> $${c.totalPurchases.toFixed(2)}</p>
+                <p style="font-size:13px"><strong>Registro:</strong> ${formatDate(c.regDate)}</p>
+                <p style="font-size:13px"><strong>Direccion:</strong> ${c.address || 'N/A'}</p>
+            </div>
+        </div>
+        <h4 style="font-size:14px;margin-bottom:8px;color:var(--primary)"><i class="fas fa-history"></i> Historial de Compras</h4>
+        ${custOrders.length ? `<table><thead><tr><th>#Pedido</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead>
+        <tbody>${custOrders.map(o => `<tr><td>${o.id}</td><td>${formatDate(o.date)}</td><td>$${o.total.toFixed(2)}</td><td><span class="badge-status ${o.status}">${capitalize(o.status)}</span></td></tr>`).join('')}</tbody></table>` : '<p class="text-muted">No hay compras registradas.</p>'}`;
+    openModal('customerDetailModal');
+}
+
+function exportCustomersCSV() {
+    let csv = 'Nombre,Cedula,Telefono,Email,Membresia,Total Compras,Fecha Registro\n';
+    demoCustomers.forEach(c => { csv += `"${c.name}",${c.cedula},${c.phone},${c.email},${c.membership},${c.totalPurchases},${c.regDate}\n`; });
+    downloadCSV(csv, 'clientes_ecsa.csv');
+}
+
+// ===== MEMBERSHIPS TABLE =====
+function renderMemberships() {
+    const tbody = document.getElementById('membershipsTableBody');
+    tbody.innerHTML = demoMemberships.map(m => {
+        const typeClass = m.type.toLowerCase();
+        return `<tr>
+            <td><strong>${m.customer}</strong></td>
+            <td><span class="badge-status ${typeClass}">${m.type}</span></td>
+            <td>${formatDate(m.startDate)}</td>
+            <td>${formatDate(m.endDate)}</td>
+            <td><span class="badge-status ${m.status}">${capitalize(m.status)}</span></td>
+            <td>
+                <button class="btn-icon" title="Ver"><i class="fas fa-eye"></i></button>
+                <button class="btn-icon" title="Renovar"><i class="fas fa-redo"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+// ===== DASHBOARD HELPERS =====
+function renderDashRecentOrders() {
+    const tbody = document.getElementById('dashRecentOrders');
+    tbody.innerHTML = demoOrders.slice(0, 10).map(o => `<tr>
+        <td><strong>${o.id}</strong></td>
+        <td>${o.customer}</td>
+        <td>$${o.total.toFixed(2)}</td>
+        <td><span class="badge-status ${o.status}">${capitalize(o.status)}</span></td>
+    </tr>`).join('');
+}
+
+function renderTopProducts() {
+    const topProducts = [
+        { name: 'Cemento Gris Portland', sales: 185, revenue: 2312.50 },
+        { name: 'Taladro Percutor DeWalt', sales: 24, revenue: 4559.76 },
+        { name: 'Tubo PVC 1/2"', sales: 320, revenue: 1040.00 },
+        { name: 'Pintura Latex Blanca', sales: 45, revenue: 1484.55 },
+        { name: 'Cable THHN #12', sales: 5000, revenue: 2250.00 },
+    ];
+    document.getElementById('topProductsList').innerHTML = topProducts.map((p, i) => `
+        <div class="top-product-item">
+            <div style="display:flex;align-items:center">
+                <span class="top-product-rank">${i + 1}</span>
+                <div>
+                    <div style="font-weight:500">${p.name}</div>
+                    <div class="text-muted">${p.sales} vendidos</div>
+                </div>
+            </div>
+            <div style="font-weight:600;color:var(--primary)">$${p.revenue.toFixed(2)}</div>
+        </div>
+    `).join('');
+}
+
+function renderDeptBreakdown() {
+    const depts = [
+        { name: 'Materiales de Construccion', pct: 35, amount: 25974 },
+        { name: 'Herramientas Electricas', pct: 20, amount: 14842 },
+        { name: 'Electricidad', pct: 15, amount: 11131 },
+        { name: 'Pinturas', pct: 12, amount: 8905 },
+        { name: 'Plomeria', pct: 8, amount: 5937 },
+        { name: 'Herramientas Manuales', pct: 5, amount: 3710 },
+        { name: 'Ferreteria General', pct: 3, amount: 2226 },
+        { name: 'Jardineria', pct: 2, amount: 1484 },
+    ];
+    const colors = ['#2E9CDB','#FF6B00','#28a745','#ffc107','#17a2b8','#6f42c1','#e83e8c','#6c757d'];
+    document.getElementById('deptBreakdown').innerHTML = depts.map((d, i) => `
+        <div class="dept-item">
+            <div class="dept-header"><span>${d.name}</span><span>$${d.amount.toLocaleString()} (${d.pct}%)</span></div>
+            <div class="dept-bar"><div class="dept-bar-fill" style="width:${d.pct}%;background:${colors[i]}"></div></div>
+        </div>
+    `).join('');
+}
+
+// ===== CHARTS =====
+let salesChartInstance = null;
+let reportSalesChartInstance = null;
+let reportDeptChartInstance = null;
+let reportPaymentChartInstance = null;
+
+function initSalesChart() {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    salesChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
+            datasets: [{
+                label: 'Ventas ($)',
+                data: [2300, 2150, 2400, 2600, 3500, 4300, 1273],
+                borderColor: '#2E9CDB',
+                backgroundColor: 'rgba(46,156,219,0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#2E9CDB',
+                pointRadius: 5,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: v => '$' + v } }
+            }
+        }
+    });
+}
+
+function updateSalesChart(days) {
+    if (!salesChartInstance) return;
+    if (days == 30) {
+        salesChartInstance.data.labels = ['Sem 1','Sem 2','Sem 3','Sem 4'];
+        salesChartInstance.data.datasets[0].data = [17830, 18523, 20000, 18857];
+    } else if (days == 90) {
+        salesChartInstance.data.labels = ['Ene','Feb','Mar'];
+        salesChartInstance.data.datasets[0].data = [68500, 71200, 74210];
+    } else {
+        salesChartInstance.data.labels = ['Lun','Mar','Mie','Jue','Vie','Sab','Dom'];
+        salesChartInstance.data.datasets[0].data = [2300, 2150, 2400, 2600, 3500, 4300, 1273];
+    }
+    salesChartInstance.update();
+}
+
+function initReportCharts() {
+    // Sales Trend
+    const ctx1 = document.getElementById('reportSalesChart').getContext('2d');
+    reportSalesChartInstance = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: ['Sem 1','Sem 2','Sem 3','Sem 4'],
+            datasets: [{
+                label: 'Ventas ($)',
+                data: [17830, 18523, 20000, 18857],
+                backgroundColor: ['rgba(46,156,219,0.8)','rgba(46,156,219,0.8)','rgba(46,156,219,0.8)','rgba(46,156,219,0.8)'],
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } }
+        }
+    });
+
+    // By Department (Pie)
+    const ctx2 = document.getElementById('reportDeptChart').getContext('2d');
+    reportDeptChartInstance = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['Mat. Construccion','Herr. Electricas','Electricidad','Pinturas','Plomeria','Herr. Manuales','Ferreteria','Jardineria'],
+            datasets: [{
+                data: [35, 20, 15, 12, 8, 5, 3, 2],
+                backgroundColor: ['#2E9CDB','#FF6B00','#28a745','#ffc107','#17a2b8','#6f42c1','#e83e8c','#6c757d'],
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { font: { size: 11 } } } }
+        }
+    });
+
+    // By Payment Method (Bar)
+    const ctx3 = document.getElementById('reportPaymentChart').getContext('2d');
+    reportPaymentChartInstance = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: ['Tarjeta Credito','Yappy','Transferencia ACH','Efectivo'],
+            datasets: [{
+                label: 'Monto ($)',
+                data: [28500, 18200, 15800, 11710],
+                backgroundColor: ['#2E9CDB','#6f42c1','#28a745','#FF6B00'],
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } }
+        }
+    });
+}
+
+function generateReport() {
+    alert('Reporte generado con el rango seleccionado (demo)');
+}
+
+function exportReportCSV() {
+    let csv = 'Periodo,Monto\nDia,$2847\nSemana,$18523\nMes,$74210\n';
+    downloadCSV(csv, 'reporte_ventas_ecsa.csv');
+}
+
+// ===== UTILITIES =====
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+}
+
+// ===================================================================
+// GRUPO 1: USUARIOS Y ROLES
+// ===================================================================
+
+let demoUsers = [
+    { id: 1, name: 'Admin ECSA', email: 'admin@ecsa.com', role: 'admin', sucursal: 'Principal - Arraijan', activo: true, lastAccess: '2026-04-02 08:15', permisos: { ver_reportes:true, ver_costos:true, descuentos:true, crear_productos:true, ver_bodega:true, devoluciones:true, exportar:true, ver_otros:true, cobro_yappy:true, cobro_tarjeta:true, cobro_transferencia:true, cobro_efectivo:true, historial_cobros:true, cierre_caja:true } },
+    { id: 2, name: 'Carlos Mendez', email: 'carlos@ecsa.com', role: 'vendedor', sucursal: 'Principal - Arraijan', activo: true, lastAccess: '2026-04-02 07:30', permisos: { ver_reportes:true, ver_costos:false, descuentos:false, crear_productos:false, ver_bodega:false, devoluciones:false, exportar:false, ver_otros:false, cobro_yappy:true, cobro_tarjeta:true, cobro_transferencia:true, cobro_efectivo:true, historial_cobros:true, cierre_caja:false } },
+    { id: 3, name: 'Jose Ruiz', email: 'jose@ecsa.com', role: 'bodeguero', sucursal: 'Principal - Arraijan', activo: true, lastAccess: '2026-04-01 17:45', permisos: { ver_reportes:false, ver_costos:true, descuentos:false, crear_productos:true, ver_bodega:true, devoluciones:false, exportar:true, ver_otros:false, cobro_yappy:false, cobro_tarjeta:false, cobro_transferencia:false, cobro_efectivo:false, historial_cobros:false, cierre_caja:false } },
+    { id: 4, name: 'Ana Rivera', email: 'ana@ecsa.com', role: 'vendedor', sucursal: 'Principal - Arraijan', activo: false, lastAccess: '2026-03-15 12:00', permisos: { ver_reportes:false, ver_costos:false, descuentos:false, crear_productos:false, ver_bodega:false, devoluciones:false, exportar:false, ver_otros:false, cobro_yappy:false, cobro_tarjeta:false, cobro_transferencia:false, cobro_efectivo:false, historial_cobros:false, cierre_caja:false } },
+    { id: 5, name: 'Maria Torres', email: 'maria.t@ecsa.com', role: 'cajero', sucursal: 'Principal - Arraijan', activo: true, lastAccess: '2026-04-02 07:00', permisos: { ver_reportes:false, ver_costos:false, descuentos:false, crear_productos:false, ver_bodega:false, devoluciones:false, exportar:false, ver_otros:false, cobro_yappy:true, cobro_tarjeta:true, cobro_transferencia:true, cobro_efectivo:true, historial_cobros:true, cierre_caja:true } },
+];
+
+function renderUsers(users) {
+    if (!users) users = demoUsers;
+    var tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = users.map(function(u) {
+        var roleColors = { admin: 'var(--danger)', vendedor: 'var(--primary)', cajero: 'var(--success)', bodeguero: 'var(--secondary)' };
+        return '<tr>' +
+            '<td><strong>' + u.name + '</strong></td>' +
+            '<td>' + u.email + '</td>' +
+            '<td><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;color:#fff;background:' + (roleColors[u.role]||'#999') + '">' + u.role.toUpperCase() + '</span></td>' +
+            '<td>' + u.sucursal + '</td>' +
+            '<td style="font-size:12px;color:var(--text-light)">' + u.lastAccess + '</td>' +
+            '<td><span class="badge-status ' + (u.activo ? 'activo' : 'inactivo') + '">' + (u.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
+            '<td>' +
+                '<button class="btn-icon" onclick="editUser(' + u.id + ')" title="Editar"><i class="fas fa-edit"></i></button>' +
+                '<button class="btn-icon" onclick="toggleUserActive(' + u.id + ')" title="' + (u.activo ? 'Desactivar' : 'Activar') + '"><i class="fas fa-' + (u.activo ? 'toggle-on" style="color:var(--success)"' : 'toggle-off" style="color:var(--text-light)"') + '></i></button>' +
+            '</td></tr>';
+    }).join('');
+}
+
+function filterUsers() {
+    var search = document.getElementById('userSearch').value.toLowerCase();
+    var role = document.getElementById('filterUserRole').value;
+    var filtered = demoUsers.filter(function(u) {
+        return (!search || u.name.toLowerCase().includes(search) || u.email.toLowerCase().includes(search)) &&
+               (!role || u.role === role);
+    });
+    renderUsers(filtered);
+}
+
+function resetUserForm() {
+    document.getElementById('userModalTitle').textContent = 'Nuevo Usuario';
+    document.getElementById('userEditId').value = '';
+    document.getElementById('userName').value = '';
+    document.getElementById('userEmail').value = '';
+    document.getElementById('userPassword').value = '';
+    document.getElementById('userRole').value = 'vendedor';
+    document.getElementById('userSucursal').value = 'Principal - Arraijan';
+    document.getElementById('userActivo').checked = true;
+    document.getElementById('userPassword').disabled = false;
+    var permIds = ['perm_ver_reportes','perm_ver_costos','perm_descuentos','perm_crear_productos','perm_ver_bodega','perm_devoluciones','perm_exportar','perm_ver_otros','perm_cobro_yappy','perm_cobro_tarjeta','perm_cobro_transferencia','perm_cobro_efectivo','perm_historial_cobros','perm_cierre_caja'];
+    permIds.forEach(function(id) { document.getElementById(id).checked = false; });
+}
+
+function editUser(id) {
+    var u = demoUsers.find(function(x) { return x.id === id; });
+    if (!u) return;
+    document.getElementById('userModalTitle').textContent = 'Editar Usuario';
+    document.getElementById('userEditId').value = u.id;
+    document.getElementById('userName').value = u.name;
+    document.getElementById('userEmail').value = u.email;
+    document.getElementById('userPassword').value = '';
+    document.getElementById('userPassword').disabled = true;
+    document.getElementById('userRole').value = u.role;
+    document.getElementById('userSucursal').value = u.sucursal;
+    document.getElementById('userActivo').checked = u.activo;
+    var permMap = { ver_reportes:'perm_ver_reportes', ver_costos:'perm_ver_costos', descuentos:'perm_descuentos', crear_productos:'perm_crear_productos', ver_bodega:'perm_ver_bodega', devoluciones:'perm_devoluciones', exportar:'perm_exportar', ver_otros:'perm_ver_otros', cobro_yappy:'perm_cobro_yappy', cobro_tarjeta:'perm_cobro_tarjeta', cobro_transferencia:'perm_cobro_transferencia', cobro_efectivo:'perm_cobro_efectivo', historial_cobros:'perm_historial_cobros', cierre_caja:'perm_cierre_caja' };
+    Object.keys(permMap).forEach(function(key) {
+        document.getElementById(permMap[key]).checked = u.permisos && u.permisos[key];
+    });
+    openModal('userModal');
+}
+
+async function saveUser() {
+    var name = document.getElementById('userName').value.trim();
+    var email = document.getElementById('userEmail').value.trim();
+    var role = document.getElementById('userRole').value;
+    if (!name || !email) { alert('Complete nombre y email'); return; }
+    var editId = document.getElementById('userEditId').value;
+    var permisos = {
+        ver_reportes: document.getElementById('perm_ver_reportes').checked,
+        ver_costos: document.getElementById('perm_ver_costos').checked,
+        descuentos: document.getElementById('perm_descuentos').checked,
+        crear_productos: document.getElementById('perm_crear_productos').checked,
+        ver_bodega: document.getElementById('perm_ver_bodega').checked,
+        devoluciones: document.getElementById('perm_devoluciones').checked,
+        exportar: document.getElementById('perm_exportar').checked,
+        ver_otros: document.getElementById('perm_ver_otros').checked,
+        cobro_yappy: document.getElementById('perm_cobro_yappy').checked,
+        cobro_tarjeta: document.getElementById('perm_cobro_tarjeta').checked,
+        cobro_transferencia: document.getElementById('perm_cobro_transferencia').checked,
+        cobro_efectivo: document.getElementById('perm_cobro_efectivo').checked,
+        historial_cobros: document.getElementById('perm_historial_cobros').checked,
+        cierre_caja: document.getElementById('perm_cierre_caja').checked
+    };
+
+    var FB = window.ECSA && ECSA.Firebase;
+    if (!FB) { alert('Firebase no disponible'); return; }
+
+    if (editId) {
+        // EDIT: update Firestore 'usuarios' document
+        try {
+            await FB.db.collection('usuarios').doc(editId).update({
+                nombre: name, email: email, rol: role,
+                sucursal: document.getElementById('userSucursal').value,
+                activo: document.getElementById('userActivo').checked,
+                permisos: permisos,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert('Usuario actualizado en Firebase');
+        } catch(e) {
+            console.warn('Error actualizando usuario:', e);
+            alert('Error actualizando: ' + e.message);
+        }
+    } else {
+        // CREATE: Firebase Auth + Firestore 'usuarios'
+        var password = document.getElementById('userPassword').value.trim();
+        if (!password || password.length < 6) { alert('Contrasena minimo 6 caracteres'); return; }
+
+        try {
+            // Create user in Auth
+            var cred;
+            if (FB.isLocal && FB.isLocal()) {
+                // Local mode: create directly (no secondary app needed)
+                cred = await FB.auth.createUserWithEmailAndPassword(email, password);
+            } else {
+                // Online: use secondary Firebase app to avoid signing out admin
+                var secondaryApp;
+                try { secondaryApp = firebase.app('secondary'); } catch(e) {
+                    secondaryApp = firebase.initializeApp(firebase.app().options, 'secondary');
+                }
+                var secondaryAuth = secondaryApp.auth();
+                cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+                await secondaryAuth.signOut();
+            }
+            var uid = cred.user.uid;
+
+            // Save profile in Firestore 'usuarios' collection
+            await FB.db.collection('usuarios').doc(uid).set({
+                nombre: name, email: email, rol: role,
+                sucursal: document.getElementById('userSucursal').value,
+                activo: document.getElementById('userActivo').checked,
+                permisos: permisos,
+                fechaCreacion: new Date().toISOString(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            alert('Usuario creado exitosamente en Firebase Auth + Firestore\n\nEmail: ' + email + '\nRol: ' + role.toUpperCase());
+        } catch(e) {
+            console.error('Error creando usuario:', e);
+            alert('Error creando usuario: ' + e.message);
+            return;
+        }
+    }
+    closeModal('userModal');
+    await loadUsersFromFirestore();
+    loadVendedoresList();
+}
+
+async function toggleUserActive(id) {
+    var FB = window.ECSA && ECSA.Firebase;
+    if (!FB) return;
+    try {
+        var doc = await FB.getDocument('usuarios', id);
+        if (doc) {
+            var newState = !doc.activo;
+            await FB.db.collection('usuarios').doc(id).update({ activo: newState });
+            await loadUsersFromFirestore();
+        }
+    } catch(e) { console.warn('Error toggling user:', e); }
+}
+
+// Load users from Firestore instead of demoUsers
+async function loadUsersFromFirestore() {
+    var FB = window.ECSA && ECSA.Firebase;
+    if (!FB) return;
+    try {
+        var users = await FB.getDocuments('usuarios');
+        demoUsers = users.map(function(u) {
+            return {
+                id: u.id, name: u.nombre || u.name || '', email: u.email || '',
+                role: u.rol || u.role || 'vendedor',
+                sucursal: u.sucursal || 'Principal - Arraijan',
+                activo: u.activo !== false,
+                lastAccess: u.lastAccess || u.fechaCreacion || '',
+                permisos: u.permisos || {}
+            };
+        });
+        renderUsers();
+    } catch(e) { console.warn('Error loading users from Firestore:', e); }
+}
+
+// ===================================================================
+// ADMIN LOGIN & INIT SYSTEM
+// ===================================================================
+
+var _adminAuthUser = null;
+
+async function doAdminLogin() {
+    var email = document.getElementById('loginEmail').value.trim();
+    var password = document.getElementById('loginPassword').value;
+    var errorEl = document.getElementById('loginError');
+    errorEl.style.display = 'none';
+    if (!email || !password) { errorEl.textContent = 'Complete email y contrasena'; errorEl.style.display = 'block'; return; }
+    try {
+        await ECSA.Firebase.auth.signInWithEmailAndPassword(email, password);
+    } catch(err) {
+        var msg = 'Error de autenticacion';
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') msg = 'Usuario no encontrado';
+        else if (err.code === 'auth/wrong-password') msg = 'Contrasena incorrecta';
+        else if (err.code === 'auth/invalid-email') msg = 'Email invalido';
+        else msg = err.message;
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+    }
+}
+
+function doAdminLogout() {
+    ECSA.Firebase.auth.signOut();
+}
+
+async function crearAdminInicial() {
+    var FB = ECSA.Firebase;
+    try {
+        var cred = await FB.auth.createUserWithEmailAndPassword('admin@ecsa.com', 'Ecsa2026!');
+        var uid = cred.user.uid;
+        var allPermsTrue = {
+            ver_reportes:true, ver_costos:true, descuentos:true, crear_productos:true,
+            ver_bodega:true, devoluciones:true, exportar:true, ver_otros:true,
+            cobro_yappy:true, cobro_tarjeta:true, cobro_transferencia:true, cobro_efectivo:true,
+            historial_cobros:true, cierre_caja:true
+        };
+        await FB.db.collection('usuarios').doc(uid).set({
+            nombre: 'Admin ECSA', email: 'admin@ecsa.com', rol: 'admin',
+            sucursal: 'Principal - Arraijan', activo: true, permisos: allPermsTrue,
+            fechaCreacion: new Date().toISOString(),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById('initResult').style.display = 'block';
+        document.getElementById('initResult').innerHTML = '<strong>Admin creado exitosamente!</strong><br>Email: <code>admin@ecsa.com</code><br>Contrasena: <code>Ecsa2026!</code><br><br>Anote estas credenciales. Ahora inicie sesion.';
+        document.getElementById('loginEmail').value = 'admin@ecsa.com';
+        // Sign out so they can log in properly
+        await FB.auth.signOut();
+    } catch(e) {
+        document.getElementById('initResult').style.display = 'block';
+        document.getElementById('initResult').style.background = '#f8d7da';
+        document.getElementById('initResult').style.color = '#721c24';
+        document.getElementById('initResult').textContent = 'Error: ' + e.message;
+    }
+}
+
+async function checkInitSystem() {
+    var FB = window.ECSA && ECSA.Firebase;
+    if (!FB) return;
+    try {
+        var users = await FB.getDocuments('usuarios', { limit: 1 });
+        if (users.length === 0) {
+            document.getElementById('initSystemPanel').style.display = 'block';
+        }
+    } catch(e) { console.warn('Error checking init:', e); }
+}
+
+// Auth state listener for admin.html
+function setupAdminAuth() {
+    var FB = window.ECSA && ECSA.Firebase;
+    if (!FB) return;
+
+    FB.auth.onAuthStateChanged(async function(user) {
+        if (!user) {
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('accessDenied').style.display = 'none';
+            document.getElementById('accessDenied').classList.add('hidden');
+            checkInitSystem();
+            return;
+        }
+        try {
+            // Check user profile in 'usuarios' then fallback 'clientes'
+            var profile = await FB.getDocument('usuarios', user.uid);
+            if (!profile) profile = await FB.getDocument('clientes', user.uid);
+            var userRole = (profile && (profile.rol || profile.tipo)) || '';
+
+            if (profile && profile.activo === false) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('accessDenied').style.display = 'flex';
+                document.getElementById('accessDenied').classList.remove('hidden');
+                document.getElementById('accessDeniedMsg').innerHTML = 'Tu cuenta esta <strong>desactivada</strong>. Contacta al administrador.';
+                await FB.auth.signOut();
+                return;
+            }
+
+            if (userRole !== 'admin') {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('accessDenied').style.display = 'flex';
+                document.getElementById('accessDenied').classList.remove('hidden');
+                return;
+            }
+
+            // Admin authenticated OK
+            _adminAuthUser = user;
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('accessDenied').style.display = 'none';
+            document.getElementById('accessDenied').classList.add('hidden');
+
+            // Update topbar
+            var nombre = (profile && profile.nombre) || user.displayName || user.email;
+            document.querySelector('.user-name').textContent = nombre;
+            document.querySelector('.avatar').textContent = nombre.charAt(0).toUpperCase();
+
+            // Load real data from Firestore
+            await loadUsersFromFirestore();
+            loadVendedoresList();
+            loadPriceMargins();
+        } catch(e) {
+            console.error('Error in admin auth:', e);
+        }
+    });
+}
+
+// ===================================================================
+// GRUPO 2: DESCUENTOS CLIENTES (solo admin)
+// ===================================================================
+
+function toggleDiscountFields() {
+    var type = document.getElementById('custDiscountType').value;
+    document.getElementById('custDiscountFixedGroup').style.display = type === 'fijo' ? '' : 'none';
+    document.getElementById('custDiscountCategoryGroup').style.display = type === 'por_categoria' ? '' : 'none';
+}
+
+function loadVendedoresList() {
+    var sel = document.getElementById('custVendedor');
+    if (!sel) return;
+    var current = sel.value;
+    sel.innerHTML = '<option value="">Sin vendedor (Cliente general)</option>';
+    demoUsers.filter(function(u) { return u.role === 'vendedor' && u.activo; }).forEach(function(u) {
+        sel.innerHTML += '<option value="' + u.id + '">' + u.name + '</option>';
+    });
+    sel.value = current;
+}
+
+// Override resetCustomerForm to include new fields
+var _origResetCustomerForm = resetCustomerForm;
+resetCustomerForm = function() {
+    _origResetCustomerForm();
+    document.getElementById('custTipo').value = 'residencial';
+    document.getElementById('custDiscountType').value = 'ninguno';
+    document.getElementById('custDiscountFixed').value = '0';
+    document.getElementById('custDiscountFixedGroup').style.display = 'none';
+    document.getElementById('custDiscountCategoryGroup').style.display = 'none';
+    document.getElementById('custVendedor').value = '';
+    ['disc_pvc','disc_construccion','disc_herramientas','disc_electricidad','disc_pinturas','disc_plomeria'].forEach(function(id) {
+        document.getElementById(id).value = '0';
+    });
+    loadVendedoresList();
+};
+
+// Override editCustomer to load new fields
+var _origEditCustomer = editCustomer;
+editCustomer = function(id) {
+    _origEditCustomer(id);
+    var c = demoCustomers.find(function(x) { return x.id === id; });
+    if (!c) return;
+    document.getElementById('custTipo').value = c.tipo || 'residencial';
+    document.getElementById('custDiscountType').value = c.discountType || 'ninguno';
+    document.getElementById('custDiscountFixed').value = c.discountFixed || 0;
+    document.getElementById('custVendedor').value = c.vendedorId || '';
+    toggleDiscountFields();
+    if (c.discountByCategory) {
+        Object.keys(c.discountByCategory).forEach(function(key) {
+            var el = document.getElementById('disc_' + key);
+            if (el) el.value = c.discountByCategory[key];
+        });
+    }
+    loadVendedoresList();
+    if (c.vendedorId) document.getElementById('custVendedor').value = c.vendedorId;
+};
+
+// Override saveCustomer to include new fields
+saveCustomer = function() {
+    var name = document.getElementById('custName').value.trim();
+    if (!name) { alert('Ingrese el nombre del cliente'); return; }
+    var editId = document.getElementById('customerEditId').value;
+    var discountType = document.getElementById('custDiscountType').value;
+    var data = {
+        name: name,
+        cedula: document.getElementById('custCedula').value,
+        phone: document.getElementById('custPhone').value,
+        email: document.getElementById('custEmail').value,
+        address: document.getElementById('custAddress').value,
+        membership: document.getElementById('custMembership').value,
+        tipo: document.getElementById('custTipo').value,
+        regDate: document.getElementById('custDate').value || new Date().toISOString().split('T')[0],
+        totalPurchases: 0,
+        discountType: discountType,
+        discountFixed: discountType === 'fijo' ? parseFloat(document.getElementById('custDiscountFixed').value) || 0 : 0,
+        discountByCategory: discountType === 'por_categoria' ? {
+            pvc: parseFloat(document.getElementById('disc_pvc').value) || 0,
+            construccion: parseFloat(document.getElementById('disc_construccion').value) || 0,
+            herramientas: parseFloat(document.getElementById('disc_herramientas').value) || 0,
+            electricidad: parseFloat(document.getElementById('disc_electricidad').value) || 0,
+            pinturas: parseFloat(document.getElementById('disc_pinturas').value) || 0,
+            plomeria: parseFloat(document.getElementById('disc_plomeria').value) || 0
+        } : {},
+        vendedorId: document.getElementById('custVendedor').value || ''
+    };
+    if (editId) {
+        var idx = demoCustomers.findIndex(function(c) { return c.id == editId; });
+        if (idx >= 0) { data.totalPurchases = demoCustomers[idx].totalPurchases; demoCustomers[idx] = Object.assign({}, demoCustomers[idx], data); }
+    } else {
+        data.id = Math.max.apply(null, demoCustomers.map(function(c){return c.id;})) + 1;
+        demoCustomers.push(data);
+    }
+    // Save to Firebase
+    if (window.ECSA && ECSA.Firebase && ECSA.Firebase.Clientes) {
+        var fbData = Object.assign({}, data);
+        delete fbData.id;
+        if (editId && demoCustomers.find(function(c){return c.id==editId;}) && demoCustomers.find(function(c){return c.id==editId;}).firebaseId) {
+            ECSA.Firebase.Clientes.update(demoCustomers.find(function(c){return c.id==editId;}).firebaseId, fbData).catch(function(e){ console.warn('FB update:', e); });
+        } else {
+            ECSA.Firebase.Clientes.getCollection && ECSA.Firebase.addDocument('clientes', fbData).catch(function(e){ console.warn('FB add:', e); });
+        }
+    }
+    closeModal('customerModal');
+    renderCustomers();
+    alert('Cliente guardado correctamente');
+};
+
+// ===================================================================
+// GRUPO 5: LISTAS DE PRECIOS
+// ===================================================================
+
+var priceMargins = { lista1: 35, lista2: 32, lista3: 28, lista4: 22, lista5: 15 };
+
+// Load margins from Firebase on startup
+function loadPriceMargins() {
+    if (window.ECSA && ECSA.Firebase) {
+        ECSA.Firebase.getDocument('configuracion', 'precios').then(function(doc) {
+            if (doc) {
+                priceMargins = { lista1: doc.lista1||35, lista2: doc.lista2||32, lista3: doc.lista3||28, lista4: doc.lista4||22, lista5: doc.lista5||15 };
+                document.getElementById('margenLista1').value = priceMargins.lista1;
+                document.getElementById('margenLista2').value = priceMargins.lista2;
+                document.getElementById('margenLista3').value = priceMargins.lista3;
+                document.getElementById('margenLista4').value = priceMargins.lista4;
+                document.getElementById('margenLista5').value = priceMargins.lista5;
+            }
+        }).catch(function() {});
+    }
+}
+
+function guardarMargenes() {
+    priceMargins.lista1 = parseFloat(document.getElementById('margenLista1').value) || 35;
+    priceMargins.lista2 = parseFloat(document.getElementById('margenLista2').value) || 32;
+    priceMargins.lista3 = parseFloat(document.getElementById('margenLista3').value) || 28;
+    priceMargins.lista4 = parseFloat(document.getElementById('margenLista4').value) || 22;
+    priceMargins.lista5 = parseFloat(document.getElementById('margenLista5').value) || 15;
+    if (window.ECSA && ECSA.Firebase) {
+        ECSA.Firebase.db.collection('configuracion').doc('precios').set(priceMargins)
+            .then(function() { alert('Margenes guardados en Firebase'); })
+            .catch(function(e) { alert('Guardado localmente. Firebase: ' + e.message); });
+    } else {
+        alert('Margenes guardados localmente');
+    }
+}
+
+function calcularPrecios(costo) {
+    return {
+        precioMostrador: +(costo * (1 + priceMargins.lista1/100)).toFixed(2),
+        precioPlatinium: +(costo * (1 + priceMargins.lista2/100)).toFixed(2),
+        precioGold:      +(costo * (1 + priceMargins.lista3/100)).toFixed(2),
+        precioPremium:   +(costo * (1 + priceMargins.lista4/100)).toFixed(2),
+        precioMayorista: +(costo * (1 + priceMargins.lista5/100)).toFixed(2)
+    };
+}
+
+function recalcularTodosPrecios() {
+    if (!confirm('Esto recalculara los precios de los ' + demoProducts.length + ' productos. Continuar?')) return;
+    demoProducts.forEach(function(p) {
+        if (p.cost > 0) {
+            var precios = calcularPrecios(p.cost);
+            p.price = precios.precioMostrador;
+            p.precioMostrador = precios.precioMostrador;
+            p.precioPlatinium = precios.precioPlatinium;
+            p.precioGold = precios.precioGold;
+            p.precioPremium = precios.precioPremium;
+            p.precioMayorista = precios.precioMayorista;
+        }
+    });
+    renderPreciosTable();
+    renderProducts();
+    alert('Precios recalculados para ' + demoProducts.length + ' productos');
+}
+
+function renderPreciosTable(products) {
+    if (!products) products = demoProducts;
+    var tbody = document.getElementById('preciosTableBody');
+    tbody.innerHTML = products.map(function(p) {
+        var precios = p.cost > 0 ? calcularPrecios(p.cost) : {};
+        return '<tr>' +
+            '<td><code>' + p.sku + '</code></td>' +
+            '<td>' + p.name + '</td>' +
+            '<td>$' + p.cost.toFixed(2) + '</td>' +
+            '<td><strong>$' + (p.precioMostrador || precios.precioMostrador || p.price).toFixed(2) + '</strong></td>' +
+            '<td>$' + (p.precioPlatinium || precios.precioPlatinium || p.price).toFixed(2) + '</td>' +
+            '<td>$' + (p.precioGold || precios.precioGold || p.price).toFixed(2) + '</td>' +
+            '<td>$' + (p.precioPremium || precios.precioPremium || p.price).toFixed(2) + '</td>' +
+            '<td>$' + (p.precioMayorista || precios.precioMayorista || p.price).toFixed(2) + '</td>' +
+            '<td><button class="btn-icon" onclick="openPriceEdit(' + p.id + ')" title="Editar precios"><i class="fas fa-edit"></i></button></td>' +
+        '</tr>';
+    }).join('');
+}
+
+function filterPreciosTable() {
+    var search = document.getElementById('precioSearch').value.toLowerCase();
+    var filtered = demoProducts.filter(function(p) {
+        return !search || p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search);
+    });
+    renderPreciosTable(filtered);
+}
+
+function openPriceEdit(id) {
+    var p = demoProducts.find(function(x) { return x.id === id; });
+    if (!p) return;
+    var precios = p.cost > 0 ? calcularPrecios(p.cost) : {};
+    document.getElementById('priceEditProductId').value = p.id;
+    document.getElementById('priceEditProductName').textContent = p.sku + ' — ' + p.name;
+    document.getElementById('priceEditCosto').value = p.cost;
+    document.getElementById('priceEditL1').value = p.precioMostrador || precios.precioMostrador || p.price;
+    document.getElementById('priceEditL2').value = p.precioPlatinium || precios.precioPlatinium || p.price;
+    document.getElementById('priceEditL3').value = p.precioGold || precios.precioGold || p.price;
+    document.getElementById('priceEditL4').value = p.precioPremium || precios.precioPremium || p.price;
+    document.getElementById('priceEditL5').value = p.precioMayorista || precios.precioMayorista || p.price;
+    openModal('priceEditModal');
+}
+
+function recalcularProductoIndividual() {
+    var costo = parseFloat(document.getElementById('priceEditCosto').value) || 0;
+    var precios = calcularPrecios(costo);
+    document.getElementById('priceEditL1').value = precios.precioMostrador;
+    document.getElementById('priceEditL2').value = precios.precioPlatinium;
+    document.getElementById('priceEditL3').value = precios.precioGold;
+    document.getElementById('priceEditL4').value = precios.precioPremium;
+    document.getElementById('priceEditL5').value = precios.precioMayorista;
+}
+
+function savePriceEdit() {
+    var id = parseInt(document.getElementById('priceEditProductId').value);
+    var p = demoProducts.find(function(x) { return x.id === id; });
+    if (!p) return;
+    p.cost = parseFloat(document.getElementById('priceEditCosto').value) || 0;
+    p.price = parseFloat(document.getElementById('priceEditL1').value) || 0;
+    p.precioMostrador = parseFloat(document.getElementById('priceEditL1').value) || 0;
+    p.precioPlatinium = parseFloat(document.getElementById('priceEditL2').value) || 0;
+    p.precioGold = parseFloat(document.getElementById('priceEditL3').value) || 0;
+    p.precioPremium = parseFloat(document.getElementById('priceEditL4').value) || 0;
+    p.precioMayorista = parseFloat(document.getElementById('priceEditL5').value) || 0;
+    closeModal('priceEditModal');
+    renderPreciosTable();
+    renderProducts();
+    alert('Precios actualizados');
+}
+
+function exportPreciosCSV() {
+    var csv = 'SKU,Nombre,Costo,Mostrador,Platinium,Gold,Premium,Mayorista\n';
+    demoProducts.forEach(function(p) {
+        var pr = calcularPrecios(p.cost);
+        csv += p.sku + ',"' + p.name + '",' + p.cost + ',' + (p.precioMostrador||pr.precioMostrador||p.price) + ',' + (p.precioPlatinium||pr.precioPlatinium||p.price) + ',' + (p.precioGold||pr.precioGold||p.price) + ',' + (p.precioPremium||pr.precioPremium||p.price) + ',' + (p.precioMayorista||pr.precioMayorista||p.price) + '\n';
+    });
+    downloadCSV(csv, 'precios_ecsa.csv');
+}
+
+// ===================================================================
+// CORRECCION 3: IMPORTAR / EXPORTAR EXCEL PRECIOS
+// ===================================================================
+
+var pendingImportData = [];
+
+function descargarPlantillaExcel() {
+    var data = [['SKU', 'Nombre', 'Costo', 'Lista1_Mostrador', 'Lista2_Platinium', 'Lista3_Gold', 'Lista4_Premium', 'Lista5_Mayorista']];
+    demoProducts.forEach(function(p) {
+        var pr = calcularPrecios(p.cost);
+        data.push([p.sku, p.name, p.cost, p.precioMostrador||pr.precioMostrador||p.price, p.precioPlatinium||pr.precioPlatinium||p.price, p.precioGold||pr.precioGold||p.price, p.precioPremium||pr.precioPremium||p.price, p.precioMayorista||pr.precioMayorista||p.price]);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:12},{wch:35},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14}];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Precios ECSA');
+    XLSX.writeFile(wb, 'plantilla_precios_ecsa.xlsx');
+}
+
+function exportarPreciosExcel() {
+    var data = [['SKU', 'Nombre', 'Departamento', 'Costo', 'Lista1_Mostrador', 'Lista2_Platinium', 'Lista3_Gold', 'Lista4_Premium', 'Lista5_Mayorista']];
+    demoProducts.forEach(function(p) {
+        var pr = calcularPrecios(p.cost);
+        data.push([p.sku, p.name, p.dept, p.cost, p.precioMostrador||pr.precioMostrador||p.price, p.precioPlatinium||pr.precioPlatinium||p.price, p.precioGold||pr.precioGold||p.price, p.precioPremium||pr.precioPremium||p.price, p.precioMayorista||pr.precioMayorista||p.price]);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:12},{wch:35},{wch:25},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14}];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Precios ECSA');
+    XLSX.writeFile(wb, 'precios_ecsa_' + new Date().toISOString().split('T')[0] + '.xlsx');
+}
+
+function importarExcelPrecios(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var wb = XLSX.read(e.target.result, {type: 'array'});
+            var ws = wb.Sheets[wb.SheetNames[0]];
+            var jsonData = XLSX.utils.sheet_to_json(ws);
+            if (!jsonData.length) { alert('El archivo esta vacio'); return; }
+
+            pendingImportData = [];
+            jsonData.forEach(function(row) {
+                var sku = String(row.SKU || row.sku || '').trim();
+                if (!sku) return;
+                var existingProduct = demoProducts.find(function(p) { return p.sku === sku; });
+                pendingImportData.push({
+                    sku: sku,
+                    nombre: row.Nombre || row.nombre || row.name || '',
+                    costo: parseFloat(row.Costo || row.costo || row.cost || 0),
+                    lista1: parseFloat(row.Lista1_Mostrador || row.Lista1 || row.Mostrador || 0),
+                    lista2: parseFloat(row.Lista2_Platinium || row.Lista2 || row.Platinium || 0),
+                    lista3: parseFloat(row.Lista3_Gold || row.Lista3 || row.Gold || 0),
+                    lista4: parseFloat(row.Lista4_Premium || row.Lista4 || row.Premium || 0),
+                    lista5: parseFloat(row.Lista5_Mayorista || row.Lista5 || row.Mayorista || 0),
+                    existingId: existingProduct ? existingProduct.id : null,
+                    estado: existingProduct ? 'actualizar' : 'nuevo'
+                });
+            });
+
+            // Show preview
+            var tbody = document.getElementById('importPreviewBody');
+            var previewRows = pendingImportData.slice(0, 10);
+            tbody.innerHTML = previewRows.map(function(r) {
+                return '<tr style="' + (r.estado==='nuevo'?'background:#fff3cd':'') + '">' +
+                    '<td><code>' + r.sku + '</code></td>' +
+                    '<td>' + r.nombre + '</td>' +
+                    '<td>$' + r.costo.toFixed(2) + '</td>' +
+                    '<td>$' + r.lista1.toFixed(2) + '</td>' +
+                    '<td>$' + r.lista2.toFixed(2) + '</td>' +
+                    '<td>$' + r.lista3.toFixed(2) + '</td>' +
+                    '<td>$' + r.lista4.toFixed(2) + '</td>' +
+                    '<td>$' + r.lista5.toFixed(2) + '</td>' +
+                    '<td><span class="badge-status ' + (r.estado==='nuevo'?'pendiente':'activo') + '">' + (r.estado==='nuevo'?'Nuevo':'Actualizar') + '</span></td>' +
+                '</tr>';
+            }).join('');
+            var actualizarCount = pendingImportData.filter(function(r){return r.estado==='actualizar';}).length;
+            var nuevoCount = pendingImportData.filter(function(r){return r.estado==='nuevo';}).length;
+            document.getElementById('importCount').textContent = pendingImportData.length + ' productos (' + actualizarCount + ' actualizar, ' + nuevoCount + ' nuevos)' + (pendingImportData.length > 10 ? ' — mostrando primeros 10' : '');
+            document.getElementById('importPreview').style.display = 'block';
+        } catch(err) {
+            alert('Error leyendo archivo: ' + err.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
+}
+
+function confirmarImportacion() {
+    var actualizados = 0, creados = 0, errores = 0;
+    pendingImportData.forEach(function(r) {
+        if (r.existingId) {
+            var idx = demoProducts.findIndex(function(p){return p.id === r.existingId;});
+            if (idx >= 0) {
+                demoProducts[idx].cost = r.costo;
+                demoProducts[idx].price = r.lista1;
+                demoProducts[idx].precioMostrador = r.lista1;
+                demoProducts[idx].precioPlatinium = r.lista2;
+                demoProducts[idx].precioGold = r.lista3;
+                demoProducts[idx].precioPremium = r.lista4;
+                demoProducts[idx].precioMayorista = r.lista5;
+                actualizados++;
+            }
+        } else if (r.nombre) {
+            var newId = Math.max.apply(null, demoProducts.map(function(p){return p.id;})) + 1;
+            demoProducts.push({
+                id: newId, sku: r.sku, name: r.nombre, dept: 'Ferreteria General',
+                price: r.lista1, cost: r.costo, stock: 0, minStock: 5, unit: 'Unidad', status: 'activo', featured: false, desc: '',
+                precioMostrador: r.lista1, precioPlatinium: r.lista2, precioGold: r.lista3, precioPremium: r.lista4, precioMayorista: r.lista5
+            });
+            creados++;
+        } else {
+            errores++;
+        }
+    });
+    cancelarImportacion();
+    renderProducts();
+    renderPreciosTable();
+    alert('Importacion completada:\n' + actualizados + ' productos actualizados\n' + creados + ' productos nuevos creados' + (errores ? '\n' + errores + ' productos sin nombre (omitidos)' : ''));
+}
+
+function cancelarImportacion() {
+    pendingImportData = [];
+    document.getElementById('importPreview').style.display = 'none';
+}
+
+// ===== INIT =====
+// ================================================================
+// FIREBASE FIRESTORE — Integración completa de productos
+// Funciona en la web (ecsapty.com) y en modo local (file://)
+// ================================================================
+
+const FB_COLECCION = 'productos';
+
+// Cargar productos desde Firestore y actualizar la UI en tiempo real
+function cargarProductosFirebase() {
+    const FB = window.ECSA && window.ECSA.Firebase;
+    if (!FB) { renderProducts(); return; }
+
+    // Mostrar indicador de carga
+    const tbody = document.getElementById('productsTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin"></i> Cargando productos...</td></tr>';
+
+    // Escuchar cambios en tiempo real
+    FB.db.collection(FB_COLECCION).onSnapshot(snapshot => {
+        demoProducts = snapshot.docs.map((doc, i) => {
+            const d = doc.data();
+            return {
+                id:        doc.id,
+                firestoreId: doc.id,
+                sku:       d.sku       || '',
+                name:      d.nombre    || d.name || '',
+                dept:      d.departamento || d.dept || '',
+                price:     parseFloat(d.precio || d.price) || 0,
+                cost:      parseFloat(d.costo  || d.cost)  || 0,
+                stock:     parseInt(d.stock)   || 0,
+                minStock:  parseInt(d.minStock) || 5,
+                unit:      d.unidad    || d.unit    || 'Unidad',
+                status:    d.estado    || d.status  || 'activo',
+                featured:  d.featured  || false,
+                desc:      d.desc      || '',
+                imagen:    d.imagen    || ''
+            };
+        });
+        renderProducts();
+        renderLowStockAlerts();
+        renderDashboard();
+        console.log('ECSA Admin: ' + demoProducts.length + ' productos cargados de Firestore.');
+    }, err => {
+        console.error('Error cargando productos:', err);
+        renderProducts(); // fallback a demo
+    });
+}
+
+// Guardar producto en Firestore
+async function guardarProductoFirebase(data, editId) {
+    const FB = window.ECSA && window.ECSA.Firebase;
+    const docData = {
+        sku:          data.sku,
+        nombre:       data.name,
+        name:         data.name,
+        departamento: data.dept,
+        dept:         data.dept,
+        precio:       data.price,
+        price:        data.price,
+        costo:        data.cost,
+        cost:         data.cost,
+        stock:        data.stock,
+        minStock:     data.minStock || 5,
+        unidad:       data.unit,
+        unit:         data.unit,
+        estado:       data.status || 'activo',
+        status:       data.status || 'activo',
+        featured:     data.featured || false,
+        desc:         data.desc || '',
+        imagen:       data.imagen || '',
+        stockBajo:    data.stock <= (data.minStock || 5)
+    };
+
+    if (!FB) {
+        // Modo local — usar array en memoria
+        if (editId) {
+            const idx = demoProducts.findIndex(p => p.id == editId || p.firestoreId == editId);
+            if (idx >= 0) demoProducts[idx] = { ...demoProducts[idx], ...data };
+        } else {
+            data.id = Date.now();
+            demoProducts.push(data);
+        }
+        renderProducts(); renderLowStockAlerts();
+        return;
+    }
+
+    try {
+        if (editId) {
+            await FB.db.collection(FB_COLECCION).doc(String(editId)).update(docData);
+        } else {
+            await FB.db.collection(FB_COLECCION).add(docData);
+        }
+        // onSnapshot actualizará automáticamente
+    } catch(e) {
+        console.error('Error guardando producto:', e);
+        alert('Error al guardar: ' + e.message);
+    }
+}
+
+// Eliminar producto de Firestore
+async function eliminarProductoFirebase(id) {
+    const FB = window.ECSA && window.ECSA.Firebase;
+    if (!FB) {
+        demoProducts = demoProducts.filter(p => p.id !== id && p.firestoreId !== id);
+        renderProducts(); renderLowStockAlerts();
+        return;
+    }
+    try {
+        await FB.db.collection(FB_COLECCION).doc(String(id)).delete();
+    } catch(e) {
+        console.error('Error eliminando producto:', e);
+        alert('Error al eliminar: ' + e.message);
+    }
+}
+
+// Importar CSV masivo a Firestore (en lotes de 500)
+async function importarCSVFirebase(rows) {
+    const FB = window.ECSA && window.ECSA.Firebase;
+    if (!FB) {
+        // Modo local
+        rows.forEach(r => {
+            const existing = demoProducts.findIndex(p => p.sku === r.sku);
+            if (existing >= 0) demoProducts[existing] = { ...demoProducts[existing], ...r };
+            else { r.id = Date.now() + Math.random(); demoProducts.push(r); }
+        });
+        renderProducts(); renderLowStockAlerts();
+        return rows.length;
+    }
+
+    // Subir en lotes de 400 (límite Firestore = 500)
+    const BATCH_SIZE = 400;
+    let total = 0;
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const batch = FB.db.batch();
+        const lote = rows.slice(i, i + BATCH_SIZE);
+        lote.forEach(r => {
+            const docRef = FB.db.collection(FB_COLECCION).doc(r.sku);
+            batch.set(docRef, {
+                sku: r.sku, nombre: r.name, name: r.name,
+                departamento: r.dept, dept: r.dept,
+                precio: r.price, price: r.price,
+                costo: r.cost, cost: r.cost,
+                stock: r.stock, minStock: r.minStock || 5,
+                unidad: r.unit || 'Unidad', unit: r.unit || 'Unidad',
+                estado: r.status || 'activo', status: r.status || 'activo',
+                featured: false, desc: r.desc || '', imagen: r.imagen || '',
+                stockBajo: r.stock <= (r.minStock || 5)
+            }, { merge: true });
+        });
+        await batch.commit();
+        total += lote.length;
+        // Actualizar progreso
+        const pct = Math.round((total / rows.length) * 100);
+        const btn = document.querySelector('label[for="csvImportInput"]') || document.querySelector('.btn-outline');
+        if (btn) btn.textContent = `Importando... ${pct}%`;
+    }
+    return total;
+}
+
+// ================================================================
+// SOBRESCRIBIR funciones originales para usar Firebase
+// ================================================================
+
+// Override saveProduct
+const _origSaveProduct = window.saveProduct || saveProduct;
+saveProduct = async function() {
+    const name = document.getElementById('prodName').value.trim();
+    const sku  = document.getElementById('prodSKU').value.trim();
+    const dept = document.getElementById('prodDept').value;
+    const price = parseFloat(document.getElementById('prodPrice').value);
+    const stock = parseInt(document.getElementById('prodStock').value);
+    if (!name || !sku || !dept || isNaN(price) || isNaN(stock)) {
+        alert('Complete todos los campos obligatorios (*)'); return;
+    }
+    const editId = document.getElementById('productEditId').value;
+    const data = {
+        name, sku, dept, price,
+        cost:     parseFloat(document.getElementById('prodCost').value) || 0,
+        stock,
+        minStock: parseInt(document.getElementById('prodMinStock').value) || 5,
+        unit:     document.getElementById('prodUnit').value,
+        desc:     document.getElementById('prodDesc').value,
+        featured: document.getElementById('prodFeatured').checked,
+        status:   'activo'
+    };
+    closeModal('productModal');
+    await guardarProductoFirebase(data, editId || null);
+    alert('✅ Producto guardado en la nube');
+};
+
+// Override deleteProduct
+deleteProduct = function(id) {
+    document.getElementById('deleteMessage').textContent = '¿Eliminar este producto de la base de datos?';
+    deleteCallback = async () => { await eliminarProductoFirebase(id); };
+    openModal('deleteModal');
+};
+
+// Override importProductsCSV
+importProductsCSV = async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const lines = e.target.result.split('\n').filter(l => l.trim());
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const idxSKU  = headers.findIndex(h => h.includes('sku'));
+        const idxNom  = headers.findIndex(h => h.includes('nombre') || h.includes('name'));
+        const idxDept = headers.findIndex(h => h.includes('departamento') || h.includes('dept') || h.includes('categ'));
+        const idxPrc  = headers.findIndex(h => h.includes('precio') || h.includes('price'));
+        const idxCst  = headers.findIndex(h => h.includes('costo') || h.includes('cost'));
+        const idxStk  = headers.findIndex(h => h.includes('stock'));
+        const idxUnit = headers.findIndex(h => h.includes('unidad') || h.includes('unit'));
+        const idxImg  = headers.findIndex(h => h.includes('imagen') || h.includes('image') || h.includes('url'));
+
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,))/g) || lines[i].split(',');
+            const c = cols.map(x => x ? x.replace(/^"|"$/g,'').trim() : '');
+            const sku  = idxSKU  >= 0 ? c[idxSKU]  : '';
+            const name = idxNom  >= 0 ? c[idxNom]  : '';
+            if (!sku || !name) continue;
+            rows.push({
+                sku, name,
+                dept:  idxDept >= 0 ? c[idxDept] : 'Herramientas INGCO',
+                price: parseFloat(idxPrc >= 0 ? c[idxPrc] : 0) || 0,
+                cost:  parseFloat(idxCst >= 0 ? c[idxCst] : 0) || 0,
+                stock: parseInt(idxStk  >= 0 ? c[idxStk]  : 0) || 0,
+                unit:  idxUnit >= 0 ? c[idxUnit] : 'Unidad',
+                imagen: idxImg >= 0 ? c[idxImg]  : '',
+                status: 'activo'
+            });
+        }
+        event.target.value = '';
+        if (!rows.length) { alert('No se encontraron productos válidos en el CSV'); return; }
+        const total = await importarCSVFirebase(rows);
+        alert(`✅ ${total} productos importados a Firebase.\nYa se ven en ecsapty.com desde cualquier dispositivo.`);
+        // Restaurar botón
+        const lbl = document.querySelector('label[for="csvImportInput"]');
+        if (lbl) lbl.innerHTML = '<i class="fas fa-file-import"></i> Importar CSV';
+    };
+    reader.readAsText(file, 'UTF-8');
+};
+
+// Override executeBulkAction para Firebase
+const _origBulkAction = executeBulkAction;
+executeBulkAction = async function() {
+    const action = document.getElementById('bulkAction').value;
+    if (!action) return;
+    const selected = [...document.querySelectorAll('.product-check:checked')].map(cb => cb.dataset.id);
+    if (!selected.length) { alert('Seleccione al menos un producto'); return; }
+    const FB = window.ECSA && window.ECSA.Firebase;
+
+    if (action === 'delete') {
+        if (!confirm('¿Eliminar ' + selected.length + ' productos de Firebase?')) return;
+        for (const id of selected) { await eliminarProductoFirebase(id); }
+    } else {
+        const nuevoEstado = action === 'activate' ? 'activo' : 'inactivo';
+        if (FB) {
+            const batch = FB.db.batch();
+            selected.forEach(id => batch.update(FB.db.collection(FB_COLECCION).doc(String(id)), { estado: nuevoEstado, status: nuevoEstado }));
+            await batch.commit();
+        } else {
+            demoProducts.forEach(p => { if (selected.includes(String(p.id))) p.status = nuevoEstado; });
+            renderProducts();
+        }
+    }
+    document.getElementById('bulkAction').value = '';
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Render placeholders mientras carga Firebase
+    renderOrders();
+    renderCustomers();
+    renderMemberships();
+    renderUsers();
+    renderPreciosTable();
+    renderDashRecentOrders();
+    renderTopProducts();
+    renderDeptBreakdown();
+    initSalesChart();
+    initReportCharts();
+    loadVendedoresList();
+    // Setup Firebase auth primero, luego carga productos
+    setupAdminAuth();
+    // Cargar productos de Firebase (o localStorage en modo local)
+    setTimeout(cargarProductosFirebase, 800);
+});
+</script>
+</body>
+</html>
